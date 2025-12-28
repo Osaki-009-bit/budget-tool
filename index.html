@@ -51,6 +51,9 @@
     .btn-primary.dirty{ background:#c62828 !important; }   /* 红：请保存 */
     .btn-primary.saved{ background:#2e7d32 !important; }   /* 绿：已保存 */
 
+    /* 日期输入框标红：曾修改过 */
+    #datePicker.edited{ color:#c62828; border-color:#c62828; font-weight:700; }
+
     /* 计算器弹窗 */
     .modal-mask{
       position:fixed; inset:0;
@@ -396,13 +399,9 @@
   let editYmd = todayYmd;
 
   function updateDatePickerRange(){
-    const maxDay = daysInMonthOf(activeYm);
-    const monthMax = `${activeYm}-${pad2(maxDay)}`;
-
-    datePicker.min = `${activeYm}-01`;
-
-    // ✅ 禁止未来：当前月最多选到今天；过去月选到月末
-    datePicker.max = (activeYm === currentYm) ? todayYmd : monthMax;
+    // 允许选择任意历史日期，但禁止未来日期
+    datePicker.min = '2000-01-01';
+    datePicker.max = todayYmd;
   }
 
   function renderTopLines(){
@@ -418,6 +417,9 @@
 
   function renderEditLine(){
     const rec = getDayRecord(editYmd);
+    // 日期框：如果这一天被修改过，则标红
+    datePicker.classList.toggle('edited', !!rec.edited);
+
     const datePart = rec.edited
       ? `<span style="color:#c62828;font-weight:700;">${editYmd}</span>`
       : `<span>${editYmd}</span>`;
@@ -435,18 +437,30 @@
   function switchEditDate(newYmd){
     flushSaveNow();
 
-    if (!newYmd || !String(newYmd).startsWith(activeYm + '-')) {
-      datePicker.value = editYmd;
-      return;
-    }
+    if (!newYmd) { datePicker.value = editYmd; return; }
 
-    // ✅ 禁止未来日期
+    // 禁止未来日期
     if (isFutureDate(newYmd)) {
       alert('不能填写未来日期（例如明天）。');
       datePicker.value = editYmd;
       return;
     }
 
+    const ym = newYmd.slice(0,7);
+
+    // 如果跨月份：自动切换到该月，并定位到这一天
+    if (ym !== activeYm) {
+      // 未来月份不可编辑（双保险）
+      if (ym > currentYm) {
+        alert('未来月份不可编辑。');
+        datePicker.value = editYmd;
+        return;
+      }
+      switchMonth(ym, newYmd);
+      return;
+    }
+
+    // 同月：正常切换编辑日
     editYmd = newYmd;
     const rec = getDayRecord(editYmd);
     dayInput.value = (rec.total ?? '') === null ? '' : (rec.total ?? '');
@@ -679,6 +693,14 @@
   datePicker.addEventListener('change', ()=>{
     const picked = datePicker.value;
     if (!picked) return;
+
+    // 禁止未来日期
+    if (isFutureDate(picked)) {
+      alert('不能填写未来日期（例如明天）。');
+      datePicker.value = editYmd;
+      return;
+    }
+
     switchEditDate(picked);
   });
 
@@ -730,7 +752,7 @@
     return (ymStr === currentYm) ? todayYmd : `${ymStr}-01`;
   }
 
-  function switchMonth(newYm){
+  function switchMonth(newYm, desiredYmd = null){
     flushSaveNow();
 
     // ✅ 禁止未来月份
@@ -751,9 +773,15 @@
     planInput.value = (monthData.plan ?? '') === null ? '' : (monthData.plan ?? '');
 
     updateDatePickerRange();
-    editYmd = pickDefaultEditDateForMonth(activeYm);
 
-    // ✅ 过去月份默认日期可能 > today（不会发生），保险裁剪
+    // 如果外部指定了某一天（例如你在日期框直接选到了上个月的某天），优先定位到那一天
+    if (desiredYmd && String(desiredYmd).startsWith(activeYm + '-')) {
+      editYmd = desiredYmd;
+    } else {
+      editYmd = pickDefaultEditDateForMonth(activeYm);
+    }
+
+    // ✅ 双保险：禁止未来日期
     if (isFutureDate(editYmd)) editYmd = todayYmd;
 
     datePicker.value = editYmd;
