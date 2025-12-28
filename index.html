@@ -89,15 +89,19 @@
         <button class="btn btn-mini" id="planUndoBtn" type="button">撤销</button>
       </div>
 
-      <label>今天花销总数（CAD）</label>
-      <input id="todayInput" type="number" inputmode="decimal" placeholder="例如 35" />
-      <div class="sub" id="todayLine" style="margin:6px 0 0;">今天：—</div>
+      <label>编辑日期（回改某一天）</label>
+      <input id="datePicker" type="date" />
+      <div class="sub" id="pickerHint" style="margin:6px 0 0;">选择日期后，下方输入框会切换到该日期。</div>
+
+      <label>当天花销总数（CAD）</label>
+      <input id="dayInput" type="number" inputmode="decimal" placeholder="例如 35" />
+      <div class="sub" id="dayLine" style="margin:6px 0 0;">编辑：—</div>
       <div class="row">
-        <button class="btn btn-mini" id="todayEditBtn" type="button">修改（计算器）</button>
-        <button class="btn btn-mini" id="todayUndoBtn" type="button">撤销</button>
+        <button class="btn btn-mini" id="dayEditBtn" type="button">修改（计算器）</button>
+        <button class="btn btn-mini" id="dayUndoBtn" type="button">撤销</button>
       </div>
 
-      <label>今日花销内容标签（可多选）</label>
+      <label>当日花销内容标签（可多选）</label>
       <div class="chips">
         <button class="chip" type="button">停车费</button>
         <button class="chip" type="button">超市购物</button>
@@ -112,13 +116,13 @@
       </div>
 
       <div class="row" style="margin-top:12px;">
-        <button class="btn btn-primary" id="recordBtn" type="button">记录今天</button>
+        <button class="btn btn-primary" id="recordBtn" type="button">保存这天</button>
       </div>
 
       <div class="grid">
         <div class="box"><div class="k">截至目前已花</div><div class="v" id="spentVal">—</div></div>
         <div class="box"><div class="k">日均实际（S ÷ d）</div><div class="v" id="avgVal">—</div></div>
-        <div class="box"><div class="k">本月余额（计划 - 已花）</div><div class="v" id="forecastVal">—</div></div>
+        <div class="box"><div class="k">本月剩余</div><div class="v" id="balanceVal">—</div></div>
         <div class="box"><div class="k">为不超支：从明天起后续日均需 ≤</div><div class="v" id="needVal">—</div></div>
       </div>
 
@@ -132,11 +136,11 @@
         <div class="muted">这里后面会列出历史月份列表。</div>
       </details>
 
-      <p class="muted">说明：这是页面骨架版本，后续我们再把“计算器修改、撤销、自动统计、历史月份、标签DAY统计”等功能逐步接上。</p>
+      <p class="muted">说明：当前版本以“日期”为唯一基准：选中哪一天，就编辑哪一天；清零也会被统计进天数（金额=0）。</p>
     </div>
   </div>
 
-  <!-- ===== 计算器弹窗（你之前缺的就是这一块） ===== -->
+  <!-- ===== 计算器弹窗 ===== -->
   <div class="modal-mask" id="calcMask" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
       <div class="modal-hd">
@@ -184,29 +188,30 @@
   </div>
 
   <script>
-  // ====== 基础：日期、当月信息 ======
+  // ====== 日期工具：避免时区问题（不要直接 new Date('YYYY-MM-DD')）======
+  const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
+  function parseYmd(ymdStr){
+    const [y,m,d] = ymdStr.split('-').map(Number);
+    return new Date(y, (m||1)-1, d||1);
+  }
+  function weekdayOf(ymdStr){
+    const dt = parseYmd(ymdStr);
+    return weekMap[dt.getDay()];
+  }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  // ====== 今日 / 本月信息 ======
   const now = new Date();
   const Y = now.getFullYear();
-  const M = String(now.getMonth() + 1).padStart(2, '0');
-  const D = String(now.getDate()).padStart(2, '0');
+  const M = pad2(now.getMonth() + 1);
+  const D = pad2(now.getDate());
   const ym = `${Y}-${M}`;
-  const ymd = `${Y}-${M}-${D}`;
-  const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
-  const w = weekMap[now.getDay()];
+  const todayYmd = `${Y}-${M}-${D}`;
   const daysInMonth = new Date(Y, now.getMonth() + 1, 0).getDate(); // 本月天数
   const dayIndex = now.getDate(); // 今天是本月第几天（1..D）
 
-  // 顶部：本月；今天：显示在 todayLine
-  (function renderDateLine(){
-    const monthEl = document.getElementById('dateLine');
-    if (monthEl) monthEl.textContent = `本月：${ym}`;
-    const todayEl = document.getElementById('todayLine');
-    if (todayEl) todayEl.textContent = `今天：${ymd}（${w}）`;
-  })();
-
   // ====== 本地存储结构 ======
-  // 每个月一份数据：plan + days(按日期) + undo
-  const STORAGE_KEY = 'budgetTool:v1';
+  const STORAGE_KEY = 'budgetTool:v2';
   function loadAll(){
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
     catch { return {}; }
@@ -219,9 +224,18 @@
     if (!all.months[ym]) {
       all.months[ym] = {
         plan: null,
-        days: {},              // { 'YYYY-MM-DD': { total: number, tags: string[] } }
-        undo: { plan: [], today: [] } // 简单撤销栈
+        days: {},                 // { 'YYYY-MM-DD': { total: number, tags: string[] } }
+        undo: { plan: [], day: [] },  // day: [{date, prevTotal, prevTags}]
+        startFrom: null,          // 用于屏蔽“更早的测试数据”
+        started: false
       };
+    } else {
+      // 兼容旧字段
+      all.months[ym].undo = all.months[ym].undo || { plan: [], day: [] };
+      all.months[ym].undo.plan = all.months[ym].undo.plan || [];
+      all.months[ym].undo.day = all.months[ym].undo.day || [];
+      all.months[ym].startFrom = all.months[ym].startFrom || null;
+      all.months[ym].started = all.months[ym].started || false;
     }
     return all.months[ym];
   }
@@ -229,23 +243,33 @@
   const all = loadAll();
   const monthData = ensureMonth(all, ym);
 
+  // 本月未开始时：默认从今天起统计（防止旧测试数据突然冒出来）
+  if (!monthData.started && (!monthData.startFrom || !String(monthData.startFrom).startsWith(ym + '-'))) {
+    monthData.startFrom = todayYmd;
+    saveAll(all);
+  }
+
   // ====== DOM 获取 ======
+  const dateLine = document.getElementById('dateLine');
+  const datePicker = document.getElementById('datePicker');
+  const dayLine = document.getElementById('dayLine');
+
   const planInput = document.getElementById('planInput');
-  const todayInput = document.getElementById('todayInput');
+  const dayInput = document.getElementById('dayInput');
 
   const planUndoBtn = document.getElementById('planUndoBtn');
-  const todayUndoBtn = document.getElementById('todayUndoBtn');
+  const dayUndoBtn = document.getElementById('dayUndoBtn');
   const recordBtn = document.getElementById('recordBtn');
 
   const spentVal = document.getElementById('spentVal');
   const avgVal = document.getElementById('avgVal');
-  const forecastVal = document.getElementById('forecastVal');
+  const balanceVal = document.getElementById('balanceVal');
   const needVal = document.getElementById('needVal');
 
   const monthList = document.getElementById('monthList');
   const chipButtons = Array.from(document.querySelectorAll('.chip'));
 
-  // ===== 保存按钮提示状态 =====
+  // ====== 保存按钮提示状态 ======
   let saveState = 'idle'; // idle | dirty | saved
   let savedToastTimer = null;
 
@@ -264,20 +288,15 @@
       recordBtn.textContent = '已保存';
       savedToastTimer = setTimeout(()=>{
         recordBtn.classList.remove('saved');
-        recordBtn.textContent = '记录今天';
+        recordBtn.textContent = '保存这天';
         saveState = 'idle';
       }, 1200);
     } else {
-      recordBtn.textContent = '记录今天';
+      recordBtn.textContent = '保存这天';
     }
   }
-
-  function markDirty(){
-    if (saveState !== 'dirty') setSaveState('dirty');
-  }
-  function markSaved(){
-    setSaveState('saved');
-  }
+  function markDirty(){ if (saveState !== 'dirty') setSaveState('dirty'); }
+  function markSaved(){ setSaveState('saved'); }
 
   // ====== 工具函数 ======
   const fmt = (n) => {
@@ -286,8 +305,8 @@
     return `${v.toFixed(2)} CAD`;
   };
 
-  function getTodayRecord(){
-    return monthData.days[ymd] || { total: null, tags: [] };
+  function getDayRecord(dateStr){
+    return monthData.days[dateStr] || { total: null, tags: [] };
   }
 
   function getSelectedTags(){
@@ -295,70 +314,88 @@
       .filter(b => b.classList.contains('on'))
       .map(b => b.textContent.trim());
   }
-
   function setSelectedTags(tags){
     const set = new Set(tags || []);
-    chipButtons.forEach(b => {
-      const on = set.has(b.textContent.trim());
-      b.classList.toggle('on', on);
-    });
+    chipButtons.forEach(b => b.classList.toggle('on', set.has(b.textContent.trim())));
   }
 
-  // ====== 恢复页面（打开就能用） ======
-  function hydrateUI(){
-    planInput.value = (monthData.plan ?? '') === null ? '' : (monthData.plan ?? '');
+  // ====== 编辑日期状态 ======
+  let editYmd = todayYmd;
 
-    const t = getTodayRecord();
-    todayInput.value = (t.total ?? '') === null ? '' : (t.total ?? '');
-    setSelectedTags(t.tags || []);
+  function renderTopLines(){
+    if (dateLine) dateLine.textContent = `本月：${ym}`;
+  }
 
+  function renderEditLine(){
+    const w = weekdayOf(editYmd);
+    dayLine.textContent = `编辑：${editYmd}（${w}）`;
+  }
+
+  function switchEditDate(newYmd){
+    // 切换前：若有未保存改动，先强制落盘
+    flushSaveNow();
+
+    // 仅允许编辑本月（后面做历史月份时再放开）
+    if (!newYmd || !String(newYmd).startsWith(ym + '-')) {
+      alert('当前版本只支持编辑本月日期。');
+      datePicker.value = editYmd;
+      return;
+    }
+
+    editYmd = newYmd;
+
+    // 恢复该日期数据到输入框与标签
+    const rec = getDayRecord(editYmd);
+    dayInput.value = (rec.total ?? '') === null ? '' : (rec.total ?? '');
+    setSelectedTags(rec.tags || []);
+
+    renderEditLine();
     renderStatsAndList();
     setSaveState('idle');
   }
 
-  // ====== 统计计算：只按“已填写金额的天”做分母 ======
+  // ====== 统计计算：只统计 startFrom（开始日）及今天（<= todayYmd） ======
   function calcSpentAndRecordedDaysUpToToday(){
     let sum = 0;
     let days = 0;
+    const start = monthData.startFrom || `${ym}-01`;
 
-    for (const [date, rec] of Object.entries(monthData.days)) {
-      if (!date.startsWith(ym + '-')) continue;
-      if (date > ymd) continue;
+    for (const [dateStr, rec] of Object.entries(monthData.days)) {
+      if (!dateStr.startsWith(ym + '-')) continue;
+      if (dateStr < start) continue;      // 屏蔽更早测试数据
+      if (dateStr > todayYmd) continue;   // “截至目前”只算到今天
       if (rec && typeof rec.total === 'number') {
         sum += rec.total;
-        days += 1;
+        days += 1; // 注意：0 也是 number，会被计入天数（清零也算一天）
       }
     }
     return { sum, days };
   }
 
-  function setBalanceDisplay(el, balance){
-    if (!el) return;
-
+  function setBalanceDisplay(balance){
     if (balance === null) {
-      el.textContent = '—';
-      el.style.color = '#111';
+      balanceVal.textContent = '—';
+      balanceVal.style.color = '#111';
       return;
     }
-
     const abs = Math.abs(balance);
     if (balance > 0) {
-      el.textContent = `${abs.toFixed(2)} CAD  余额`;
-      el.style.color = '#2e7d32';
+      balanceVal.textContent = `${abs.toFixed(2)} CAD  剩余`;
+      balanceVal.style.color = '#2e7d32';
     } else if (balance < 0) {
-      el.textContent = `${abs.toFixed(2)} CAD  超支`;
-      el.style.color = '#c62828';
+      balanceVal.textContent = `${abs.toFixed(2)} CAD  超支`;
+      balanceVal.style.color = '#c62828';
     } else {
-      el.textContent = `0.00 CAD  平衡`;
-      el.style.color = '#111';
+      balanceVal.textContent = `0.00 CAD  平衡`;
+      balanceVal.style.color = '#111';
     }
   }
 
   function renderStatsAndList(){
     const P = (typeof monthData.plan === 'number') ? monthData.plan : null;
 
-    const { sum: S, days: recordedDays } = calcSpentAndRecordedDaysUpToToday();
-    const A = (recordedDays > 0) ? (S / recordedDays) : null;
+    const { sum: S, days: d } = calcSpentAndRecordedDaysUpToToday();
+    const A = (d > 0) ? (S / d) : null;
 
     const B = (P === null) ? null : (P - S);
 
@@ -367,10 +404,10 @@
 
     spentVal.textContent = fmt(S);
     avgVal.textContent = fmt(A);
-    setBalanceDisplay(forecastVal, B);
+    setBalanceDisplay(B);
     needVal.textContent = (R === null) ? '—' : fmt(R);
 
-    const keys = Object.keys(monthData.days).sort();
+    const keys = Object.keys(monthData.days).filter(k => k.startsWith(ym+'-')).sort();
     if (!keys.length) {
       monthList.textContent = '（暂无记录）';
       return;
@@ -387,34 +424,51 @@
     monthList.innerHTML = rows;
   }
 
-  // ====== 写入与撤销（简版） ======
+  // ====== 写入与撤销 ======
   function commitPlan(newVal){
     const prev = monthData.plan;
     monthData.undo.plan.push(prev);
     if (monthData.undo.plan.length > 30) monthData.undo.plan.shift();
+
     monthData.plan = newVal;
 
     saveAll(all);
     renderStatsAndList();
-    // 计划不影响“保存按钮提示”，保持不打扰
   }
 
-  function commitTodayTotal(newVal){
-    const prev = getTodayRecord().total ?? null;
-    monthData.undo.today.push(prev);
-    if (monthData.undo.today.length > 30) monthData.undo.today.shift();
+  function commitDay(dateStr, newTotal, newTags){
+    const existing = monthData.days[dateStr] || { total: null, tags: [] };
 
-    const rec = getTodayRecord();
-    rec.total = newVal;
-    rec.tags = getSelectedTags();
-    monthData.days[ymd] = rec;
+    // undo：按日期保存上一次状态
+    monthData.undo.day.push({
+      date: dateStr,
+      prevTotal: (typeof existing.total === 'number') ? existing.total : null,
+      prevTags: Array.isArray(existing.tags) ? existing.tags.slice() : []
+    });
+    if (monthData.undo.day.length > 80) monthData.undo.day.shift();
+
+    const rec = { total: newTotal, tags: Array.isArray(newTags) ? newTags.slice() : [] };
+    monthData.days[dateStr] = rec;
+
+    // 本月开始与开始日：第一次写入即开始；开始日取“最早写入日期”
+    monthData.started = true;
+    if (!monthData.startFrom || dateStr < monthData.startFrom) monthData.startFrom = dateStr;
 
     saveAll(all);
     renderStatsAndList();
-    markSaved(); // ✅ 自动保存完成后，按钮提示“已保存”
+    markSaved();
   }
 
-  // —— 防抖：停止输入 300ms 后再保存
+  function popUndoForDate(dateStr){
+    for (let i = monthData.undo.day.length - 1; i >= 0; i--) {
+      if (monthData.undo.day[i].date === dateStr) {
+        return monthData.undo.day.splice(i, 1)[0];
+      }
+    }
+    return null;
+  }
+
+  // ====== 防抖 ======
   function debounce(fn, wait=300){
     let t = null;
     return (...args) => {
@@ -424,7 +478,7 @@
   }
 
   const savePlanDebounced = debounce((n) => commitPlan(n), 300);
-  const saveTodayDebounced = debounce((n) => commitTodayTotal(n), 300);
+  const saveDayDebounced = debounce((dateStr, n, tags) => commitDay(dateStr, n, tags), 300);
 
   planInput.addEventListener('input', () => {
     const v = planInput.value.trim();
@@ -433,48 +487,38 @@
     savePlanDebounced(n);
   });
 
-  todayInput.addEventListener('input', () => {
-    const v = todayInput.value.trim();
+  dayInput.addEventListener('input', () => {
+    const v = dayInput.value.trim();
     const n = v === '' ? null : Number(v);
     if (v !== '' && Number.isNaN(n)) return;
 
-    markDirty();               // ✅ 一改就提示“请保存”
-    saveTodayDebounced(n);     // ✅ 停止输入后自动保存并“已保存”
+    markDirty();
+    // 自动保存：金额改动后 300ms 落盘
+    saveDayDebounced(editYmd, n, getSelectedTags());
   });
 
-  // 标签点亮：同步保存到“今天记录”
+  // 标签点亮：同步保存到“当前编辑日期”
   chipButtons.forEach(btn=>{
     btn.addEventListener('click', ()=>{
       btn.classList.toggle('on');
       markDirty();
 
-      const rec = getTodayRecord();
-      rec.tags = getSelectedTags();
-      monthData.days[ymd] = rec;
-
-      saveAll(all);
-      renderStatsAndList();
-
-      // 标签改动也走一次“已保存”提示（这里不防抖，立即保存）
-      markSaved();
+      const rec = getDayRecord(editYmd);
+      const currentTotal = (typeof rec.total === 'number') ? rec.total : null;
+      saveDayDebounced(editYmd, currentTotal, getSelectedTags());
     });
   });
 
-  // 记录按钮：明确确认保存（覆盖/更新今天记录）
+  // 保存按钮：明确落盘（覆盖当前编辑日期）
   recordBtn.addEventListener('click', ()=>{
-    const v = todayInput.value.trim();
+    const v = dayInput.value.trim();
     const n = v === '' ? null : Number(v);
-    const rec = getTodayRecord();
-    rec.total = (v === '' ? rec.total : n);
-    rec.tags = getSelectedTags();
-    monthData.days[ymd] = rec;
+    if (v !== '' && Number.isNaN(n)) return;
 
-    saveAll(all);
-    renderStatsAndList();
-    markSaved(); // ✅ 用按钮变绿代替 alert
+    commitDay(editYmd, n, getSelectedTags());
   });
 
-  // 撤销按钮（简版）
+  // 撤销
   planUndoBtn.addEventListener('click', ()=>{
     if (!monthData.undo.plan.length) return;
     const prev = monthData.undo.plan.pop();
@@ -484,14 +528,15 @@
     renderStatsAndList();
   });
 
-  todayUndoBtn.addEventListener('click', ()=>{
-    if (!monthData.undo.today.length) return;
-    const prev = monthData.undo.today.pop();
-    const rec = getTodayRecord();
-    rec.total = prev;
-    monthData.days[ymd] = rec;
-    todayInput.value = (prev ?? '') === null ? '' : (prev ?? '');
+  dayUndoBtn.addEventListener('click', ()=>{
+    const u = popUndoForDate(editYmd);
+    if (!u) return;
+
+    monthData.days[editYmd] = { total: u.prevTotal, tags: u.prevTags };
     saveAll(all);
+
+    dayInput.value = (u.prevTotal ?? '') === null ? '' : (u.prevTotal ?? '');
+    setSelectedTags(u.prevTags || []);
     renderStatsAndList();
     markSaved();
   });
@@ -500,19 +545,23 @@
   function flushSaveNow(){
     if (saveState !== 'dirty') return;
 
-    const v = todayInput.value.trim();
+    const v = dayInput.value.trim();
     const n = v === '' ? null : Number(v);
     if (v !== '' && Number.isNaN(n)) return;
 
-    // 强制落盘（并触发“已保存”提示）
-    commitTodayTotal(n);
+    commitDay(editYmd, n, getSelectedTags());
   }
   window.addEventListener('pagehide', flushSaveNow);
-  document.addEventListener('visibilitychange', ()=> {
-    if (document.hidden) flushSaveNow();
+  document.addEventListener('visibilitychange', ()=> { if (document.hidden) flushSaveNow(); });
+
+  // ====== 日期选择器：切换编辑日期 ======
+  datePicker.addEventListener('change', ()=>{
+    const picked = datePicker.value;
+    if (!picked) return;
+    switchEditDate(picked);
   });
 
-  // ===== 计算器弹窗：用于“修改（计算器）” =====
+  // ====== 计算器弹窗：用于“修改（计算器）” ======
   const calcMask = document.getElementById('calcMask');
   const calcClose = document.getElementById('calcClose');
   const calcCancel = document.getElementById('calcCancel');
@@ -521,15 +570,15 @@
   const calcExprEl = document.getElementById('calcExpr');
   const calcValEl = document.getElementById('calcVal');
 
-  let calcTarget = null;   // 'plan' | 'today'
-  let expr = '';           // 表达式字符串，例如 "30+5-2"
-  let lastValue = null;    // 计算出来的结果
+  let calcTarget = null;   // 'plan' | 'day'
+  let expr = '';
+  let lastValue = null;
 
   function showCalc(target){
     calcTarget = target;
     const base = target === 'plan'
       ? (planInput.value.trim() || (typeof monthData.plan === 'number' ? String(monthData.plan) : ''))
-      : (todayInput.value.trim() || (getTodayRecord().total != null ? String(getTodayRecord().total) : ''));
+      : (dayInput.value.trim() || (getDayRecord(editYmd).total != null ? String(getDayRecord(editYmd).total) : ''));
 
     expr = (base === '' ? '0' : base);
     renderCalc();
@@ -572,9 +621,7 @@
     renderCalc();
   }
 
-  calcMask.addEventListener('click', (e)=>{
-    if (e.target === calcMask) hideCalc();
-  });
+  calcMask.addEventListener('click', (e)=>{ if (e.target === calcMask) hideCalc(); });
   calcClose.addEventListener('click', hideCalc);
   calcCancel.addEventListener('click', hideCalc);
 
@@ -588,10 +635,10 @@
     if (calcTarget === 'plan') {
       planInput.value = String(lastValue);
       commitPlan(lastValue);
-    } else if (calcTarget === 'today') {
-      todayInput.value = String(lastValue);
+    } else if (calcTarget === 'day') {
+      dayInput.value = String(lastValue);
       markDirty();
-      commitTodayTotal(lastValue);
+      commitDay(editYmd, lastValue, getSelectedTags());
     }
     hideCalc();
   }
@@ -600,11 +647,28 @@
   calcUse.addEventListener('click', applyCalcResult);
 
   document.getElementById('planEditBtn').addEventListener('click', ()=> showCalc('plan'));
-  document.getElementById('todayEditBtn').addEventListener('click', ()=> showCalc('today'));
+  document.getElementById('dayEditBtn').addEventListener('click', ()=> showCalc('day'));
 
-  // 首次加载：恢复 UI
+  // ====== 首次加载：恢复 UI ======
+  function hydrateUI(){
+    renderTopLines();
+
+    planInput.value = (monthData.plan ?? '') === null ? '' : (monthData.plan ?? '');
+
+    // 初始化日期选择器为今天（可随时切换）
+    editYmd = todayYmd;
+    datePicker.value = editYmd;
+
+    const rec = getDayRecord(editYmd);
+    dayInput.value = (rec.total ?? '') === null ? '' : (rec.total ?? '');
+    setSelectedTags(rec.tags || []);
+
+    renderEditLine();
+    renderStatsAndList();
+    setSaveState('idle');
+  }
+
   hydrateUI();
   </script>
-
 </body>
 </html>
