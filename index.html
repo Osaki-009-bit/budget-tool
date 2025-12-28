@@ -102,8 +102,10 @@
   const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
   const w = weekMap[now.getDay()];
 
-  el.textContent = `今天：${y}-${m}-${d}（${w}）  ｜  本月：${y}-${m}`;
-})();
+  el.textContent = `本月：${y}-${m}`;
+const todayEl = document.getElementById('todayLine');
+if (todayEl) todayEl.textContent = `今天：${y}-${m}-${d}（${w}）`;
+
 
 // 2) 标签点亮/取消点亮（当前不存储）
 document.querySelectorAll('.chip').forEach(btn=>{
