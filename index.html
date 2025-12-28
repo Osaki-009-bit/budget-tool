@@ -72,7 +72,7 @@
       <div class="grid">
         <div class="box"><div class="k">截至目前已花</div><div class="v" id="spentVal">—</div></div>
 <div class="box"><div class="k">日均实际（S ÷ d）</div><div class="v" id="avgVal">—</div></div>
-<div class="box"><div class="k">预计到月底总花销（趋势参考）</div><div class="v" id="forecastVal">—</div></div>
+<div class="box"><div class="k">本月余额（计划 - 已花）</div><div class="v" id="forecastVal">—</div></div>
 <div class="box"><div class="k">为不超支：从明天起后续日均需 ≤</div><div class="v" id="needVal">—</div></div>
       </div>
 
@@ -192,17 +192,20 @@
   }
 
   // ====== 统计计算（按你定的口径：S ÷ d） ======
-  function calcSUpToToday(){
-    // 把 1..dayIndex 的日期逐天取值，未记的当 0
-    let sum = 0;
-    for (let i = 1; i <= dayIndex; i++) {
-      const dd = String(i).padStart(2, '0');
-      const key = `${ym}-${dd}`;
-      const rec = monthData.days[key];
-      if (rec && typeof rec.total === 'number') sum += rec.total;
+  function calcSpentAndRecordedDaysUpToToday(){
+  let sum = 0;
+  let days = 0;
+
+  for (const [date, rec] of Object.entries(monthData.days)) {
+    if (!date.startsWith(ym + '-')) continue; // 只算本月
+    if (date > ymd) continue;                // 只算到今天（含今天）
+    if (rec && typeof rec.total === 'number') {
+      sum += rec.total;
+      days += 1; // 只数“真的填写过金额”的天
     }
-    return sum;
   }
+  return { sum, days };
+}
 
   function colorByCompare(el, a, b){
     // a vs b：a>b 红，a<b 绿，= 黑
@@ -215,39 +218,63 @@
     else el.style.color = '#2e7d32'; // 绿
   }
 
-  function renderStatsAndList(){
-    const P = (typeof monthData.plan === 'number') ? monthData.plan : null;
-    const S = calcSUpToToday(); // 截至今日累计已花（含未记为0）
-    const A = S / dayIndex;     // 日均实际（S ÷ d）
-    const E = A * daysInMonth;  // 预计到月底
-    const T = daysInMonth - dayIndex; // 明天起剩余天数
-    const R = (P === null || T <= 0) ? null : Math.max(0, (P - S) / T);
+  function setBalanceDisplay(el, balance){
+  if (!el) return;
 
-    spentVal.textContent = fmt(S);
-    avgVal.textContent = fmt(A);
-    forecastVal.textContent = fmt(E);
-    needVal.textContent = (R === null) ? '—' : fmt(R);
-
-    // 颜色以“预计到月底 vs 计划”为准（你之前偏好趋势状态）
-    colorByCompare(forecastVal, E, P);
-
-    // 每日列表：只展示已记录的天（先简版，后面再做“修改/计算器”）
-    const keys = Object.keys(monthData.days).sort();
-    if (!keys.length) {
-      monthList.textContent = '（暂无记录）';
-      return;
-    }
-    const rows = keys.map(k => {
-      const rec = monthData.days[k];
-      const money = (typeof rec.total === 'number') ? `${rec.total.toFixed(2)} CAD` : '—';
-      const tags = (rec.tags && rec.tags.length) ? rec.tags.join(' / ') : '（无标签）';
-      return `<div style="padding:6px 0;border-bottom:1px dashed #eee;">
-                <strong>${k}</strong> ｜ ${money}<br/>
-                <span style="color:#666;font-size:13px;">${tags}</span>
-              </div>`;
-    }).join('');
-    monthList.innerHTML = rows;
+  if (balance === null) {
+    el.textContent = '—';
+    el.style.color = '#111';
+    return;
   }
+
+  const abs = Math.abs(balance);
+  if (balance > 0) {
+    el.textContent = `${abs.toFixed(2)} CAD  余额`;
+    el.style.color = '#2e7d32'; // 绿
+  } else if (balance < 0) {
+    el.textContent = `${abs.toFixed(2)} CAD  超支`;
+    el.style.color = '#c62828'; // 红
+  } else {
+    el.textContent = `0.00 CAD  平衡`;
+    el.style.color = '#111'; // 黑
+  }
+}
+    function renderStatsAndList(){
+  const P = (typeof monthData.plan === 'number') ? monthData.plan : null;
+
+  // ✅ 只按“已填写金额的天”计算日均
+  const { sum: S, days: recordedDays } = calcSpentAndRecordedDaysUpToToday();
+  const A = (recordedDays > 0) ? (S / recordedDays) : null;
+
+  // ✅ 本月余额 / 超支
+  const B = (P === null) ? null : (P - S);
+
+  // ✅ 从明天起不超支：仍按日历剩余天数算（逻辑更符合“从明天起每天最多花多少”）
+  const remainingDays = daysInMonth - dayIndex;
+  const R = (P === null || remainingDays <= 0) ? null : Math.max(0, (P - S) / remainingDays);
+
+  spentVal.textContent = fmt(S);
+  avgVal.textContent = fmt(A);
+  setBalanceDisplay(forecastVal, B);
+  needVal.textContent = (R === null) ? '—' : fmt(R);
+
+  // 每日列表（保持你原来的逻辑不动）
+  const keys = Object.keys(monthData.days).sort();
+  if (!keys.length) {
+    monthList.textContent = '（暂无记录）';
+    return;
+  }
+  const rows = keys.map(k => {
+    const rec = monthData.days[k];
+    const money = (typeof rec.total === 'number') ? `${rec.total.toFixed(2)} CAD` : '—';
+    const tags = (rec.tags && rec.tags.length) ? rec.tags.join(' / ') : '（无标签）';
+    return `<div style="padding:6px 0;border-bottom:1px dashed #eee;">
+              <strong>${k}</strong> ｜ ${money}<br/>
+              <span style="color:#666;font-size:13px;">${tags}</span>
+            </div>`;
+  }).join('');
+  monthList.innerHTML = rows;
+}
 
   // ====== 写入与撤销（简版） ======
   function commitPlan(newVal){
