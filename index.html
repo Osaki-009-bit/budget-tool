@@ -36,19 +36,19 @@
 
 
       <label>本月计划花销总数（CAD）</label>
-      <input type="number" inputmode="decimal" placeholder="例如 1000" />
+      <input id="planInput" type="number" inputmode="decimal" placeholder="例如 1000" />
       <div class="row">
-        <button class="btn btn-mini" type="button">修改（计算器）</button>
-        <button class="btn btn-mini" type="button">撤销</button>
-      </div>
+  <button class="btn btn-mini" id="planEditBtn" type="button">修改（计算器）</button>
+  <button class="btn btn-mini" id="planUndoBtn" type="button">撤销</button>
+  </div>
 
       <label>今天花销总数（CAD）</label>
-      <input type="number" inputmode="decimal" placeholder="例如 35" />
-      <div class="sub" id="todayLine" style="margin:6px 0 0;">今天：—</div>
+      <input id="todayInput" type="number" inputmode="decimal" placeholder="例如 35" />
       <div class="row">
-        <button class="btn btn-mini" type="button">修改（计算器）</button>
-        <button class="btn btn-mini" type="button">撤销</button>
-      </div>
+  <button class="btn btn-mini" id="todayEditBtn" type="button">修改（计算器）</button>
+  <button class="btn btn-mini" id="todayUndoBtn" type="button">撤销</button>
+  </div>
+
 
       <label>今日花销内容标签（可多选）</label>
       <div class="chips">
@@ -65,20 +65,21 @@
       </div>
 
       <div class="row" style="margin-top:12px;">
-        <button class="btn btn-primary" type="button">记录今天（后面加逻辑）</button>
+        <button class="btn btn-primary" id="recordBtn" type="button">记录今天（后面加逻辑）</button>
       </div>
 
       <div class="grid">
-        <div class="box"><div class="k">截至目前已花</div><div class="v">—</div></div>
-        <div class="box"><div class="k">日均实际（S ÷ d）</div><div class="v">—</div></div>
-        <div class="box"><div class="k">预计到月底总花销（趋势参考）</div><div class="v">—</div></div>
-        <div class="box"><div class="k">为不超支：从明天起后续日均需 ≤</div><div class="v">—</div></div>
+        <div class="box"><div class="k">截至目前已花</div><div class="v" id="spentVal">—</div></div>
+<div class="box"><div class="k">日均实际（S ÷ d）</div><div class="v" id="avgVal">—</div></div>
+<div class="box"><div class="k">预计到月底总花销（趋势参考）</div><div class="v" id="forecastVal">—</div></div>
+<div class="box"><div class="k">为不超支：从明天起后续日均需 ≤</div><div class="v" id="needVal">—</div></div>
       </div>
 
       <details>
-        <summary>本月每日列表（将来展开显示每天金额 + 标签）</summary>
-        <div class="muted">这里后面会自动生成每天记录。</div>
+  <summary>本月每日列表（将来展开显示每天金额 + 标签）</summary>
+  <div class="muted" id="monthList">（暂无记录）</div>
       </details>
+
 
       <details>
         <summary>历史月份（将来展开回看）</summary>
@@ -90,25 +91,261 @@
   </div>
 
   <script>
-// 1) 日期自动显示（跟设备时间同步）
-(function renderDateLine(){
+  // ====== 基础：日期、当月信息 ======
   const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = String(now.getDate()).padStart(2, '0');
+  const ym = `${Y}-${M}`;
+  const ymd = `${Y}-${M}-${D}`;
   const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
   const w = weekMap[now.getDay()];
+  const daysInMonth = new Date(Y, now.getMonth() + 1, 0).getDate(); // 本月天数
+  const dayIndex = now.getDate(); // 今天是本月第几天（1..D）
 
-  // 顶部：只显示本月
-  const monthEl = document.getElementById('dateLine');
-  if (monthEl) monthEl.textContent = `本月：${y}-${m}`;
+  // 顶部：本月；今天：显示在 todayLine
+  (function renderDateLine(){
+    const monthEl = document.getElementById('dateLine');
+    if (monthEl) monthEl.textContent = `本月：${ym}`;
+    const todayEl = document.getElementById('todayLine');
+    if (todayEl) todayEl.textContent = `今天：${ymd}（${w}）`;
+  })();
 
-  // 今天输入框下面：显示今天
-  const todayEl = document.getElementById('todayLine');
-  if (todayEl) todayEl.textContent = `今天：${y}-${m}-${d}（${w}）`;
-})();
+  // ====== 本地存储结构 ======
+  // 每个月一份数据：plan + days(按日期) + undo
+  const STORAGE_KEY = 'budgetTool:v1';
+  function loadAll(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+  }
+  function saveAll(all){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }
+  function ensureMonth(all, ym){
+    all.months = all.months || {};
+    if (!all.months[ym]) {
+      all.months[ym] = {
+        plan: null,
+        days: {},              // { 'YYYY-MM-DD': { total: number, tags: string[] } }
+        undo: { plan: [], today: [] } // 简单撤销栈
+      };
+    }
+    return all.months[ym];
+  }
 
-  </script>
+  const all = loadAll();
+  const monthData = ensureMonth(all, ym);
+
+  // ====== DOM 获取 ======
+  const planInput = document.getElementById('planInput');
+  const todayInput = document.getElementById('todayInput');
+
+  const planUndoBtn = document.getElementById('planUndoBtn');
+  const todayUndoBtn = document.getElementById('todayUndoBtn');
+  const recordBtn = document.getElementById('recordBtn');
+
+  const spentVal = document.getElementById('spentVal');
+  const avgVal = document.getElementById('avgVal');
+  const forecastVal = document.getElementById('forecastVal');
+  const needVal = document.getElementById('needVal');
+
+  const monthList = document.getElementById('monthList');
+  const chipButtons = Array.from(document.querySelectorAll('.chip'));
+
+  // ====== 工具函数 ======
+  const fmt = (n) => {
+    if (n === null || n === undefined || Number.isNaN(n)) return '—';
+    const v = Math.round(n * 100) / 100;
+    return `${v.toFixed(2)} CAD`;
+  };
+
+  function getTodayRecord(){
+    return monthData.days[ymd] || { total: null, tags: [] };
+  }
+
+  function getSelectedTags(){
+    return chipButtons
+      .filter(b => b.classList.contains('on'))
+      .map(b => b.textContent.trim());
+  }
+
+  function setSelectedTags(tags){
+    const set = new Set(tags || []);
+    chipButtons.forEach(b => {
+      const on = set.has(b.textContent.trim());
+      b.classList.toggle('on', on);
+    });
+  }
+
+  // ====== 恢复页面（打开就能用） ======
+  function hydrateUI(){
+    // 计划
+    planInput.value = (monthData.plan ?? '') === null ? '' : (monthData.plan ?? '');
+
+    // 今天
+    const t = getTodayRecord();
+    todayInput.value = (t.total ?? '') === null ? '' : (t.total ?? '');
+    setSelectedTags(t.tags || []);
+
+    renderStatsAndList();
+  }
+
+  // ====== 统计计算（按你定的口径：S ÷ d） ======
+  function calcSUpToToday(){
+    // 把 1..dayIndex 的日期逐天取值，未记的当 0
+    let sum = 0;
+    for (let i = 1; i <= dayIndex; i++) {
+      const dd = String(i).padStart(2, '0');
+      const key = `${ym}-${dd}`;
+      const rec = monthData.days[key];
+      if (rec && typeof rec.total === 'number') sum += rec.total;
+    }
+    return sum;
+  }
+
+  function colorByCompare(el, a, b){
+    // a vs b：a>b 红，a<b 绿，= 黑
+    if (!el) return;
+    el.style.color = '#111';
+    if (a === null || b === null) return;
+    const diff = a - b;
+    if (Math.abs(diff) < 1e-9) el.style.color = '#111';
+    else if (diff > 0) el.style.color = '#c62828'; // 红
+    else el.style.color = '#2e7d32'; // 绿
+  }
+
+  function renderStatsAndList(){
+    const P = (typeof monthData.plan === 'number') ? monthData.plan : null;
+    const S = calcSUpToToday(); // 截至今日累计已花（含未记为0）
+    const A = S / dayIndex;     // 日均实际（S ÷ d）
+    const E = A * daysInMonth;  // 预计到月底
+    const T = daysInMonth - dayIndex; // 明天起剩余天数
+    const R = (P === null || T <= 0) ? null : Math.max(0, (P - S) / T);
+
+    spentVal.textContent = fmt(S);
+    avgVal.textContent = fmt(A);
+    forecastVal.textContent = fmt(E);
+    needVal.textContent = (R === null) ? '—' : fmt(R);
+
+    // 颜色以“预计到月底 vs 计划”为准（你之前偏好趋势状态）
+    colorByCompare(forecastVal, E, P);
+
+    // 每日列表：只展示已记录的天（先简版，后面再做“修改/计算器”）
+    const keys = Object.keys(monthData.days).sort();
+    if (!keys.length) {
+      monthList.textContent = '（暂无记录）';
+      return;
+    }
+    const rows = keys.map(k => {
+      const rec = monthData.days[k];
+      const money = (typeof rec.total === 'number') ? `${rec.total.toFixed(2)} CAD` : '—';
+      const tags = (rec.tags && rec.tags.length) ? rec.tags.join(' / ') : '（无标签）';
+      return `<div style="padding:6px 0;border-bottom:1px dashed #eee;">
+                <strong>${k}</strong> ｜ ${money}<br/>
+                <span style="color:#666;font-size:13px;">${tags}</span>
+              </div>`;
+    }).join('');
+    monthList.innerHTML = rows;
+  }
+
+  // ====== 写入与撤销（简版） ======
+  function commitPlan(newVal){
+    const prev = monthData.plan;
+    monthData.undo.plan.push(prev);
+    if (monthData.undo.plan.length > 30) monthData.undo.plan.shift();
+    monthData.plan = newVal;
+
+    saveAll(all);
+    renderStatsAndList();
+  }
+
+  function commitTodayTotal(newVal){
+    const prev = getTodayRecord().total ?? null;
+    monthData.undo.today.push(prev);
+    if (monthData.undo.today.length > 30) monthData.undo.today.shift();
+
+    const rec = getTodayRecord();
+    rec.total = newVal;
+    rec.tags = getSelectedTags();
+    monthData.days[ymd] = rec;
+
+    saveAll(all);
+    renderStatsAndList();
+  }
+
+  // 输入框：失焦/回车后保存（避免每敲一个数字就写入）
+  planInput.addEventListener('change', () => {
+    const v = planInput.value.trim();
+    const n = v === '' ? null : Number(v);
+    if (v !== '' && Number.isNaN(n)) return;
+    commitPlan(n);
+  });
+
+  todayInput.addEventListener('change', () => {
+    const v = todayInput.value.trim();
+    const n = v === '' ? null : Number(v);
+    if (v !== '' && Number.isNaN(n)) return;
+    commitTodayTotal(n);
+  });
+
+  // 标签点亮：同步保存到“今天记录”（不需要再点记录按钮也能保留标签）
+  chipButtons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      btn.classList.toggle('on');
+      const rec = getTodayRecord();
+      rec.tags = getSelectedTags();
+      // 不强迫写 total；只同步 tags
+      monthData.days[ymd] = rec;
+      saveAll(all);
+      renderStatsAndList();
+    });
+  });
+
+  // 记录按钮：把今天金额+标签“确认写入”（这里做一次 render 即可）
+  recordBtn.addEventListener('click', ()=>{
+    const v = todayInput.value.trim();
+    const n = v === '' ? null : Number(v);
+    const rec = getTodayRecord();
+    rec.total = (v === '' ? rec.total : n);
+    rec.tags = getSelectedTags();
+    monthData.days[ymd] = rec;
+    saveAll(all);
+    renderStatsAndList();
+    alert('已保存今天记录');
+  });
+
+  // 撤销按钮（简版）
+  planUndoBtn.addEventListener('click', ()=>{
+    if (!monthData.undo.plan.length) return;
+    const prev = monthData.undo.plan.pop();
+    monthData.plan = prev;
+    planInput.value = (prev ?? '') === null ? '' : (prev ?? '');
+    saveAll(all);
+    renderStatsAndList();
+  });
+
+  todayUndoBtn.addEventListener('click', ()=>{
+    if (!monthData.undo.today.length) return;
+    const prev = monthData.undo.today.pop();
+    const rec = getTodayRecord();
+    rec.total = prev;
+    monthData.days[ymd] = rec;
+    todayInput.value = (prev ?? '') === null ? '' : (prev ?? '');
+    saveAll(all);
+    renderStatsAndList();
+  });
+
+  // 目前“修改（计算器）”按钮下一步做；先防止误点无反应
+  document.getElementById('planEditBtn').addEventListener('click', ()=> {
+    alert('下一步我们接：计算器弹窗修改');
+  });
+  document.getElementById('todayEditBtn').addEventListener('click', ()=> {
+    alert('下一步我们接：计算器弹窗修改');
+  });
+
+  // 首次加载：恢复 UI
+  hydrateUI();
+</script>
+
 </body>
 </html>
