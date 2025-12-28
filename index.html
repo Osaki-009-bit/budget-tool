@@ -302,19 +302,36 @@
   }
 
   // 输入框：失焦/回车后保存（避免每敲一个数字就写入）
-  planInput.addEventListener('change', () => {
-    const v = planInput.value.trim();
-    const n = v === '' ? null : Number(v);
-    if (v !== '' && Number.isNaN(n)) return;
-    commitPlan(n);
-  });
+  // —— 防抖：停止输入 300ms 后再保存
+function debounce(fn, wait=300){
+  let t = null;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
 
-  todayInput.addEventListener('change', () => {
-    const v = todayInput.value.trim();
-    const n = v === '' ? null : Number(v);
-    if (v !== '' && Number.isNaN(n)) return;
-    commitTodayTotal(n);
-  });
+// 输入时：立刻更新统计；停下来后：保存
+const savePlanDebounced = debounce((n) => commitPlan(n), 300);
+const saveTodayDebounced = debounce((n) => commitTodayTotal(n), 300);
+
+planInput.addEventListener('input', () => {
+  const v = planInput.value.trim();
+  const n = v === '' ? null : Number(v);
+  if (v !== '' && Number.isNaN(n)) return;
+
+  // 实时保存（防抖）
+  savePlanDebounced(n);
+});
+
+todayInput.addEventListener('input', () => {
+  const v = todayInput.value.trim();
+  const n = v === '' ? null : Number(v);
+  if (v !== '' && Number.isNaN(n)) return;
+
+  // 实时保存（防抖）
+  saveTodayDebounced(n);
+});
 
   // 标签点亮：同步保存到“今天记录”（不需要再点记录按钮也能保留标签）
   chipButtons.forEach(btn=>{
