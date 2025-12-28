@@ -380,13 +380,98 @@ todayInput.addEventListener('input', () => {
     renderStatsAndList();
   });
 
-  // 目前“修改（计算器）”按钮下一步做；先防止误点无反应
-  document.getElementById('planEditBtn').addEventListener('click', ()=> {
-    alert('下一步我们接：计算器弹窗修改');
-  });
-  document.getElementById('todayEditBtn').addEventListener('click', ()=> {
-    alert('下一步我们接：计算器弹窗修改');
-  });
+// ===== 计算器弹窗：用于“修改（计算器）” =====
+const calcMask = document.getElementById('calcMask');
+const calcClose = document.getElementById('calcClose');
+const calcCancel = document.getElementById('calcCancel');
+const calcUse = document.getElementById('calcUse');
+const calcOk = document.getElementById('calcOk');
+const calcExprEl = document.getElementById('calcExpr');
+const calcValEl = document.getElementById('calcVal');
+
+let calcTarget = null;   // 'plan' | 'today'
+let expr = '';           // 表达式字符串，例如 "30+5-2"
+let lastValue = null;    // 计算出来的结果
+
+function showCalc(target){
+  calcTarget = target;
+  const base = target === 'plan'
+    ? (planInput.value.trim() || (typeof monthData.plan === 'number' ? String(monthData.plan) : ''))
+    : (todayInput.value.trim() || (getTodayRecord().total != null ? String(getTodayRecord().total) : ''));
+
+  expr = (base === '' ? '0' : base);
+  renderCalc();
+  calcMask.style.display = 'flex';
+  calcMask.setAttribute('aria-hidden', 'false');
+}
+
+function hideCalc(){
+  calcMask.style.display = 'none';
+  calcMask.setAttribute('aria-hidden', 'true');
+  calcTarget = null;
+}
+
+function safeEval(s){
+  // 只允许数字、.+-*/() 和空格
+  const ok = /^[0-9+\-*/().\s]+$/.test(s);
+  if (!ok) return null;
+  try {
+    const out = Function(`"use strict"; return (${s});`)();
+    if (typeof out !== 'number' || !isFinite(out)) return null;
+    return Math.round(out * 100) / 100; // 保留 2 位
+  } catch {
+    return null;
+  }
+}
+
+function renderCalc(){
+  calcExprEl.textContent = expr;
+  const v = safeEval(expr);
+  lastValue = v;
+  calcValEl.textContent = (v === null) ? '表达式无效' : `${v.toFixed(2)} CAD`;
+}
+
+function appendKey(k){
+  if (k === 'C') { expr = '0'; renderCalc(); return; }
+  if (k === 'BS') { expr = expr.length <= 1 ? '0' : expr.slice(0, -1); renderCalc(); return; }
+  if (k === '=') { renderCalc(); return; }
+
+  if (expr === '0' && /^[0-9]$/.test(k)) expr = k;
+  else expr += k;
+  renderCalc();
+}
+
+// 点击遮罩空白处关闭
+calcMask.addEventListener('click', (e)=>{
+  if (e.target === calcMask) hideCalc();
+});
+calcClose.addEventListener('click', hideCalc);
+calcCancel.addEventListener('click', hideCalc);
+
+document.querySelectorAll('.calc-btn[data-k]').forEach(btn=>{
+  btn.addEventListener('click', ()=> appendKey(btn.dataset.k));
+});
+
+// “确认/写回”：把结果写回到对应输入框，并触发保存逻辑
+function applyCalcResult(){
+  if (lastValue === null) { alert('表达式无效，请修改后再确认'); return; }
+
+  if (calcTarget === 'plan') {
+    planInput.value = String(lastValue);
+    commitPlan(lastValue);
+  } else if (calcTarget === 'today') {
+    todayInput.value = String(lastValue);
+    commitTodayTotal(lastValue);
+  }
+  hideCalc();
+}
+
+calcOk.addEventListener('click', applyCalcResult);
+calcUse.addEventListener('click', applyCalcResult);
+
+// 绑定两个“修改（计算器）”按钮
+document.getElementById('planEditBtn').addEventListener('click', ()=> showCalc('plan'));
+document.getElementById('todayEditBtn').addEventListener('click', ()=> showCalc('today'));
 
   // 首次加载：恢复 UI
   hydrateUI();
