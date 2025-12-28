@@ -26,6 +26,54 @@
     details{margin-top:14px;}
     summary{cursor:pointer;font-size:14px;}
     .muted{color:#666;font-size:13px;line-height:1.5;margin-top:12px;}
+
+    /* 保存提示：有未确认修改时，按钮变色提示 */
+    .btn-primary.dirty{ background:#c62828 !important; }   /* 红：请保存 */
+    .btn-primary.saved{ background:#2e7d32 !important; }   /* 绿：已保存 */
+
+    /* ===== 计算器弹窗 ===== */
+    .modal-mask{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.35);
+      display:none; align-items:center; justify-content:center;
+      padding:16px;
+    }
+    .modal{
+      width:min(520px, 100%);
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.18);
+      padding:14px;
+    }
+    .modal-hd{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .modal-title{font-weight:800;}
+    .modal-close{border:0;background:#eef0f7;border-radius:12px;padding:8px 10px;cursor:pointer;}
+    .calc-screen{
+      margin-top:10px;
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:10px;
+      background:#fafafa;
+    }
+    .calc-expr{font-size:14px; color:#666; min-height:18px; word-break:break-all;}
+    .calc-val{font-size:22px; font-weight:900; margin-top:4px; min-height:28px;}
+    .calc-grid{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:8px;
+    }
+    .calc-btn{
+      border:0; border-radius:12px;
+      padding:14px 10px;
+      background:#eef0f7;
+      font-size:16px;
+      cursor:pointer;
+    }
+    .calc-btn.op{background:#111;color:#fff;}
+    .calc-btn.warn{background:#ffe9e9;}
+    .calc-actions{display:flex; gap:10px; margin-top:10px;}
+    .calc-actions .btn-primary{flex:1;}
   </style>
 </head>
 <body>
@@ -34,22 +82,20 @@
       <h1>轻记账（客观统计）</h1>
       <p class="sub" id="dateLine">本月：—</p>
 
-
       <label>本月计划花销总数（CAD）</label>
       <input id="planInput" type="number" inputmode="decimal" placeholder="例如 1000" />
       <div class="row">
-  <button class="btn btn-mini" id="planEditBtn" type="button">修改（计算器）</button>
-  <button class="btn btn-mini" id="planUndoBtn" type="button">撤销</button>
-  </div>
+        <button class="btn btn-mini" id="planEditBtn" type="button">修改（计算器）</button>
+        <button class="btn btn-mini" id="planUndoBtn" type="button">撤销</button>
+      </div>
 
       <label>今天花销总数（CAD）</label>
       <input id="todayInput" type="number" inputmode="decimal" placeholder="例如 35" />
       <div class="sub" id="todayLine" style="margin:6px 0 0;">今天：—</div>
       <div class="row">
-  <button class="btn btn-mini" id="todayEditBtn" type="button">修改（计算器）</button>
-  <button class="btn btn-mini" id="todayUndoBtn" type="button">撤销</button>
-  </div>
-
+        <button class="btn btn-mini" id="todayEditBtn" type="button">修改（计算器）</button>
+        <button class="btn btn-mini" id="todayUndoBtn" type="button">撤销</button>
+      </div>
 
       <label>今日花销内容标签（可多选）</label>
       <div class="chips">
@@ -66,21 +112,20 @@
       </div>
 
       <div class="row" style="margin-top:12px;">
-        <button class="btn btn-primary" id="recordBtn" type="button">记录今天（后面加逻辑）</button>
+        <button class="btn btn-primary" id="recordBtn" type="button">记录今天</button>
       </div>
 
       <div class="grid">
         <div class="box"><div class="k">截至目前已花</div><div class="v" id="spentVal">—</div></div>
-<div class="box"><div class="k">日均实际（S ÷ d）</div><div class="v" id="avgVal">—</div></div>
-<div class="box"><div class="k">本月余额（计划 - 已花）</div><div class="v" id="forecastVal">—</div></div>
-<div class="box"><div class="k">为不超支：从明天起后续日均需 ≤</div><div class="v" id="needVal">—</div></div>
+        <div class="box"><div class="k">日均实际（S ÷ d）</div><div class="v" id="avgVal">—</div></div>
+        <div class="box"><div class="k">本月余额（计划 - 已花）</div><div class="v" id="forecastVal">—</div></div>
+        <div class="box"><div class="k">为不超支：从明天起后续日均需 ≤</div><div class="v" id="needVal">—</div></div>
       </div>
 
       <details>
-  <summary>本月每日列表（将来展开显示每天金额 + 标签）</summary>
-  <div class="muted" id="monthList">（暂无记录）</div>
+        <summary>本月每日列表（将来展开显示每天金额 + 标签）</summary>
+        <div class="muted" id="monthList">（暂无记录）</div>
       </details>
-
 
       <details>
         <summary>历史月份（将来展开回看）</summary>
@@ -88,6 +133,53 @@
       </details>
 
       <p class="muted">说明：这是页面骨架版本，后续我们再把“计算器修改、撤销、自动统计、历史月份、标签DAY统计”等功能逐步接上。</p>
+    </div>
+  </div>
+
+  <!-- ===== 计算器弹窗（你之前缺的就是这一块） ===== -->
+  <div class="modal-mask" id="calcMask" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
+      <div class="modal-hd">
+        <div class="modal-title" id="calcTitle">计算器修改</div>
+        <button class="modal-close" id="calcClose" type="button">关闭</button>
+      </div>
+
+      <div class="calc-screen">
+        <div class="calc-expr" id="calcExpr">—</div>
+        <div class="calc-val" id="calcVal">—</div>
+      </div>
+
+      <div class="calc-grid">
+        <button class="calc-btn warn" data-k="C" type="button">清零</button>
+        <button class="calc-btn warn" data-k="BS" type="button">退格</button>
+        <button class="calc-btn op" data-k="/" type="button">÷</button>
+        <button class="calc-btn op" data-k="*" type="button">×</button>
+
+        <button class="calc-btn" data-k="7" type="button">7</button>
+        <button class="calc-btn" data-k="8" type="button">8</button>
+        <button class="calc-btn" data-k="9" type="button">9</button>
+        <button class="calc-btn op" data-k="-" type="button">−</button>
+
+        <button class="calc-btn" data-k="4" type="button">4</button>
+        <button class="calc-btn" data-k="5" type="button">5</button>
+        <button class="calc-btn" data-k="6" type="button">6</button>
+        <button class="calc-btn op" data-k="+" type="button">+</button>
+
+        <button class="calc-btn" data-k="1" type="button">1</button>
+        <button class="calc-btn" data-k="2" type="button">2</button>
+        <button class="calc-btn" data-k="3" type="button">3</button>
+        <button class="calc-btn" data-k="." type="button">.</button>
+
+        <button class="calc-btn" data-k="0" type="button">0</button>
+        <button class="calc-btn" data-k="00" type="button">00</button>
+        <button class="calc-btn op" data-k="=" type="button">=</button>
+        <button class="calc-btn op" id="calcOk" type="button">确认</button>
+      </div>
+
+      <div class="calc-actions">
+        <button class="btn" id="calcCancel" type="button">取消</button>
+        <button class="btn btn-primary" id="calcUse" type="button">把结果写回</button>
+      </div>
     </div>
   </div>
 
@@ -153,6 +245,40 @@
   const monthList = document.getElementById('monthList');
   const chipButtons = Array.from(document.querySelectorAll('.chip'));
 
+  // ===== 保存按钮提示状态 =====
+  let saveState = 'idle'; // idle | dirty | saved
+  let savedToastTimer = null;
+
+  function setSaveState(state){
+    saveState = state;
+
+    if (savedToastTimer) { clearTimeout(savedToastTimer); savedToastTimer = null; }
+
+    recordBtn.classList.remove('dirty','saved');
+
+    if (state === 'dirty') {
+      recordBtn.classList.add('dirty');
+      recordBtn.textContent = '请保存';
+    } else if (state === 'saved') {
+      recordBtn.classList.add('saved');
+      recordBtn.textContent = '已保存';
+      savedToastTimer = setTimeout(()=>{
+        recordBtn.classList.remove('saved');
+        recordBtn.textContent = '记录今天';
+        saveState = 'idle';
+      }, 1200);
+    } else {
+      recordBtn.textContent = '记录今天';
+    }
+  }
+
+  function markDirty(){
+    if (saveState !== 'dirty') setSaveState('dirty');
+  }
+  function markSaved(){
+    setSaveState('saved');
+  }
+
   // ====== 工具函数 ======
   const fmt = (n) => {
     if (n === null || n === undefined || Number.isNaN(n)) return '—';
@@ -180,101 +306,86 @@
 
   // ====== 恢复页面（打开就能用） ======
   function hydrateUI(){
-    // 计划
     planInput.value = (monthData.plan ?? '') === null ? '' : (monthData.plan ?? '');
 
-    // 今天
     const t = getTodayRecord();
     todayInput.value = (t.total ?? '') === null ? '' : (t.total ?? '');
     setSelectedTags(t.tags || []);
 
     renderStatsAndList();
+    setSaveState('idle');
   }
 
-  // ====== 统计计算（按你定的口径：S ÷ d） ======
+  // ====== 统计计算：只按“已填写金额的天”做分母 ======
   function calcSpentAndRecordedDaysUpToToday(){
-  let sum = 0;
-  let days = 0;
+    let sum = 0;
+    let days = 0;
 
-  for (const [date, rec] of Object.entries(monthData.days)) {
-    if (!date.startsWith(ym + '-')) continue; // 只算本月
-    if (date > ymd) continue;                // 只算到今天（含今天）
-    if (rec && typeof rec.total === 'number') {
-      sum += rec.total;
-      days += 1; // 只数“真的填写过金额”的天
+    for (const [date, rec] of Object.entries(monthData.days)) {
+      if (!date.startsWith(ym + '-')) continue;
+      if (date > ymd) continue;
+      if (rec && typeof rec.total === 'number') {
+        sum += rec.total;
+        days += 1;
+      }
     }
-  }
-  return { sum, days };
-}
-
-  function colorByCompare(el, a, b){
-    // a vs b：a>b 红，a<b 绿，= 黑
-    if (!el) return;
-    el.style.color = '#111';
-    if (a === null || b === null) return;
-    const diff = a - b;
-    if (Math.abs(diff) < 1e-9) el.style.color = '#111';
-    else if (diff > 0) el.style.color = '#c62828'; // 红
-    else el.style.color = '#2e7d32'; // 绿
+    return { sum, days };
   }
 
   function setBalanceDisplay(el, balance){
-  if (!el) return;
+    if (!el) return;
 
-  if (balance === null) {
-    el.textContent = '—';
-    el.style.color = '#111';
-    return;
+    if (balance === null) {
+      el.textContent = '—';
+      el.style.color = '#111';
+      return;
+    }
+
+    const abs = Math.abs(balance);
+    if (balance > 0) {
+      el.textContent = `${abs.toFixed(2)} CAD  余额`;
+      el.style.color = '#2e7d32';
+    } else if (balance < 0) {
+      el.textContent = `${abs.toFixed(2)} CAD  超支`;
+      el.style.color = '#c62828';
+    } else {
+      el.textContent = `0.00 CAD  平衡`;
+      el.style.color = '#111';
+    }
   }
 
-  const abs = Math.abs(balance);
-  if (balance > 0) {
-    el.textContent = `${abs.toFixed(2)} CAD  余额`;
-    el.style.color = '#2e7d32'; // 绿
-  } else if (balance < 0) {
-    el.textContent = `${abs.toFixed(2)} CAD  超支`;
-    el.style.color = '#c62828'; // 红
-  } else {
-    el.textContent = `0.00 CAD  平衡`;
-    el.style.color = '#111'; // 黑
+  function renderStatsAndList(){
+    const P = (typeof monthData.plan === 'number') ? monthData.plan : null;
+
+    const { sum: S, days: recordedDays } = calcSpentAndRecordedDaysUpToToday();
+    const A = (recordedDays > 0) ? (S / recordedDays) : null;
+
+    const B = (P === null) ? null : (P - S);
+
+    const remainingDays = daysInMonth - dayIndex;
+    const R = (P === null || remainingDays <= 0) ? null : Math.max(0, (P - S) / remainingDays);
+
+    spentVal.textContent = fmt(S);
+    avgVal.textContent = fmt(A);
+    setBalanceDisplay(forecastVal, B);
+    needVal.textContent = (R === null) ? '—' : fmt(R);
+
+    const keys = Object.keys(monthData.days).sort();
+    if (!keys.length) {
+      monthList.textContent = '（暂无记录）';
+      return;
+    }
+    const rows = keys.map(k => {
+      const rec = monthData.days[k];
+      const money = (typeof rec.total === 'number') ? `${rec.total.toFixed(2)} CAD` : '—';
+      const tags = (rec.tags && rec.tags.length) ? rec.tags.join(' / ') : '（无标签）';
+      return `<div style="padding:6px 0;border-bottom:1px dashed #eee;">
+                <strong>${k}</strong> ｜ ${money}<br/>
+                <span style="color:#666;font-size:13px;">${tags}</span>
+              </div>`;
+    }).join('');
+    monthList.innerHTML = rows;
   }
-}
-    function renderStatsAndList(){
-  const P = (typeof monthData.plan === 'number') ? monthData.plan : null;
-
-  // ✅ 只按“已填写金额的天”计算日均
-  const { sum: S, days: recordedDays } = calcSpentAndRecordedDaysUpToToday();
-  const A = (recordedDays > 0) ? (S / recordedDays) : null;
-
-  // ✅ 本月余额 / 超支
-  const B = (P === null) ? null : (P - S);
-
-  // ✅ 从明天起不超支：仍按日历剩余天数算（逻辑更符合“从明天起每天最多花多少”）
-  const remainingDays = daysInMonth - dayIndex;
-  const R = (P === null || remainingDays <= 0) ? null : Math.max(0, (P - S) / remainingDays);
-
-  spentVal.textContent = fmt(S);
-  avgVal.textContent = fmt(A);
-  setBalanceDisplay(forecastVal, B);
-  needVal.textContent = (R === null) ? '—' : fmt(R);
-
-  // 每日列表（保持你原来的逻辑不动）
-  const keys = Object.keys(monthData.days).sort();
-  if (!keys.length) {
-    monthList.textContent = '（暂无记录）';
-    return;
-  }
-  const rows = keys.map(k => {
-    const rec = monthData.days[k];
-    const money = (typeof rec.total === 'number') ? `${rec.total.toFixed(2)} CAD` : '—';
-    const tags = (rec.tags && rec.tags.length) ? rec.tags.join(' / ') : '（无标签）';
-    return `<div style="padding:6px 0;border-bottom:1px dashed #eee;">
-              <strong>${k}</strong> ｜ ${money}<br/>
-              <span style="color:#666;font-size:13px;">${tags}</span>
-            </div>`;
-  }).join('');
-  monthList.innerHTML = rows;
-}
 
   // ====== 写入与撤销（简版） ======
   function commitPlan(newVal){
@@ -285,6 +396,7 @@
 
     saveAll(all);
     renderStatsAndList();
+    // 计划不影响“保存按钮提示”，保持不打扰
   }
 
   function commitTodayTotal(newVal){
@@ -299,54 +411,56 @@
 
     saveAll(all);
     renderStatsAndList();
+    markSaved(); // ✅ 自动保存完成后，按钮提示“已保存”
   }
 
-  // 输入框：失焦/回车后保存（避免每敲一个数字就写入）
   // —— 防抖：停止输入 300ms 后再保存
-function debounce(fn, wait=300){
-  let t = null;
-  return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), wait);
-  };
-}
+  function debounce(fn, wait=300){
+    let t = null;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), wait);
+    };
+  }
 
-// 输入时：立刻更新统计；停下来后：保存
-const savePlanDebounced = debounce((n) => commitPlan(n), 300);
-const saveTodayDebounced = debounce((n) => commitTodayTotal(n), 300);
+  const savePlanDebounced = debounce((n) => commitPlan(n), 300);
+  const saveTodayDebounced = debounce((n) => commitTodayTotal(n), 300);
 
-planInput.addEventListener('input', () => {
-  const v = planInput.value.trim();
-  const n = v === '' ? null : Number(v);
-  if (v !== '' && Number.isNaN(n)) return;
+  planInput.addEventListener('input', () => {
+    const v = planInput.value.trim();
+    const n = v === '' ? null : Number(v);
+    if (v !== '' && Number.isNaN(n)) return;
+    savePlanDebounced(n);
+  });
 
-  // 实时保存（防抖）
-  savePlanDebounced(n);
-});
+  todayInput.addEventListener('input', () => {
+    const v = todayInput.value.trim();
+    const n = v === '' ? null : Number(v);
+    if (v !== '' && Number.isNaN(n)) return;
 
-todayInput.addEventListener('input', () => {
-  const v = todayInput.value.trim();
-  const n = v === '' ? null : Number(v);
-  if (v !== '' && Number.isNaN(n)) return;
+    markDirty();               // ✅ 一改就提示“请保存”
+    saveTodayDebounced(n);     // ✅ 停止输入后自动保存并“已保存”
+  });
 
-  // 实时保存（防抖）
-  saveTodayDebounced(n);
-});
-
-  // 标签点亮：同步保存到“今天记录”（不需要再点记录按钮也能保留标签）
+  // 标签点亮：同步保存到“今天记录”
   chipButtons.forEach(btn=>{
     btn.addEventListener('click', ()=>{
       btn.classList.toggle('on');
+      markDirty();
+
       const rec = getTodayRecord();
       rec.tags = getSelectedTags();
-      // 不强迫写 total；只同步 tags
       monthData.days[ymd] = rec;
+
       saveAll(all);
       renderStatsAndList();
+
+      // 标签改动也走一次“已保存”提示（这里不防抖，立即保存）
+      markSaved();
     });
   });
 
-  // 记录按钮：把今天金额+标签“确认写入”（这里做一次 render 即可）
+  // 记录按钮：明确确认保存（覆盖/更新今天记录）
   recordBtn.addEventListener('click', ()=>{
     const v = todayInput.value.trim();
     const n = v === '' ? null : Number(v);
@@ -354,9 +468,10 @@ todayInput.addEventListener('input', () => {
     rec.total = (v === '' ? rec.total : n);
     rec.tags = getSelectedTags();
     monthData.days[ymd] = rec;
+
     saveAll(all);
     renderStatsAndList();
-    alert('已保存今天记录');
+    markSaved(); // ✅ 用按钮变绿代替 alert
   });
 
   // 撤销按钮（简版）
@@ -378,104 +493,118 @@ todayInput.addEventListener('input', () => {
     todayInput.value = (prev ?? '') === null ? '' : (prev ?? '');
     saveAll(all);
     renderStatsAndList();
+    markSaved();
   });
 
-// ===== 计算器弹窗：用于“修改（计算器）” =====
-const calcMask = document.getElementById('calcMask');
-const calcClose = document.getElementById('calcClose');
-const calcCancel = document.getElementById('calcCancel');
-const calcUse = document.getElementById('calcUse');
-const calcOk = document.getElementById('calcOk');
-const calcExprEl = document.getElementById('calcExpr');
-const calcValEl = document.getElementById('calcVal');
+  // 切后台/关闭页面时强制保存一次（避免用户“没点保存就走了”）
+  function flushSaveNow(){
+    if (saveState !== 'dirty') return;
 
-let calcTarget = null;   // 'plan' | 'today'
-let expr = '';           // 表达式字符串，例如 "30+5-2"
-let lastValue = null;    // 计算出来的结果
+    const v = todayInput.value.trim();
+    const n = v === '' ? null : Number(v);
+    if (v !== '' && Number.isNaN(n)) return;
 
-function showCalc(target){
-  calcTarget = target;
-  const base = target === 'plan'
-    ? (planInput.value.trim() || (typeof monthData.plan === 'number' ? String(monthData.plan) : ''))
-    : (todayInput.value.trim() || (getTodayRecord().total != null ? String(getTodayRecord().total) : ''));
-
-  expr = (base === '' ? '0' : base);
-  renderCalc();
-  calcMask.style.display = 'flex';
-  calcMask.setAttribute('aria-hidden', 'false');
-}
-
-function hideCalc(){
-  calcMask.style.display = 'none';
-  calcMask.setAttribute('aria-hidden', 'true');
-  calcTarget = null;
-}
-
-function safeEval(s){
-  // 只允许数字、.+-*/() 和空格
-  const ok = /^[0-9+\-*/().\s]+$/.test(s);
-  if (!ok) return null;
-  try {
-    const out = Function(`"use strict"; return (${s});`)();
-    if (typeof out !== 'number' || !isFinite(out)) return null;
-    return Math.round(out * 100) / 100; // 保留 2 位
-  } catch {
-    return null;
+    // 强制落盘（并触发“已保存”提示）
+    commitTodayTotal(n);
   }
-}
+  window.addEventListener('pagehide', flushSaveNow);
+  document.addEventListener('visibilitychange', ()=> {
+    if (document.hidden) flushSaveNow();
+  });
 
-function renderCalc(){
-  calcExprEl.textContent = expr;
-  const v = safeEval(expr);
-  lastValue = v;
-  calcValEl.textContent = (v === null) ? '表达式无效' : `${v.toFixed(2)} CAD`;
-}
+  // ===== 计算器弹窗：用于“修改（计算器）” =====
+  const calcMask = document.getElementById('calcMask');
+  const calcClose = document.getElementById('calcClose');
+  const calcCancel = document.getElementById('calcCancel');
+  const calcUse = document.getElementById('calcUse');
+  const calcOk = document.getElementById('calcOk');
+  const calcExprEl = document.getElementById('calcExpr');
+  const calcValEl = document.getElementById('calcVal');
 
-function appendKey(k){
-  if (k === 'C') { expr = '0'; renderCalc(); return; }
-  if (k === 'BS') { expr = expr.length <= 1 ? '0' : expr.slice(0, -1); renderCalc(); return; }
-  if (k === '=') { renderCalc(); return; }
+  let calcTarget = null;   // 'plan' | 'today'
+  let expr = '';           // 表达式字符串，例如 "30+5-2"
+  let lastValue = null;    // 计算出来的结果
 
-  if (expr === '0' && /^[0-9]$/.test(k)) expr = k;
-  else expr += k;
-  renderCalc();
-}
+  function showCalc(target){
+    calcTarget = target;
+    const base = target === 'plan'
+      ? (planInput.value.trim() || (typeof monthData.plan === 'number' ? String(monthData.plan) : ''))
+      : (todayInput.value.trim() || (getTodayRecord().total != null ? String(getTodayRecord().total) : ''));
 
-// 点击遮罩空白处关闭
-calcMask.addEventListener('click', (e)=>{
-  if (e.target === calcMask) hideCalc();
-});
-calcClose.addEventListener('click', hideCalc);
-calcCancel.addEventListener('click', hideCalc);
-
-document.querySelectorAll('.calc-btn[data-k]').forEach(btn=>{
-  btn.addEventListener('click', ()=> appendKey(btn.dataset.k));
-});
-
-// “确认/写回”：把结果写回到对应输入框，并触发保存逻辑
-function applyCalcResult(){
-  if (lastValue === null) { alert('表达式无效，请修改后再确认'); return; }
-
-  if (calcTarget === 'plan') {
-    planInput.value = String(lastValue);
-    commitPlan(lastValue);
-  } else if (calcTarget === 'today') {
-    todayInput.value = String(lastValue);
-    commitTodayTotal(lastValue);
+    expr = (base === '' ? '0' : base);
+    renderCalc();
+    calcMask.style.display = 'flex';
+    calcMask.setAttribute('aria-hidden', 'false');
   }
-  hideCalc();
-}
 
-calcOk.addEventListener('click', applyCalcResult);
-calcUse.addEventListener('click', applyCalcResult);
+  function hideCalc(){
+    calcMask.style.display = 'none';
+    calcMask.setAttribute('aria-hidden', 'true');
+    calcTarget = null;
+  }
 
-// 绑定两个“修改（计算器）”按钮
-document.getElementById('planEditBtn').addEventListener('click', ()=> showCalc('plan'));
-document.getElementById('todayEditBtn').addEventListener('click', ()=> showCalc('today'));
+  function safeEval(s){
+    const ok = /^[0-9+\-*/().\s]+$/.test(s);
+    if (!ok) return null;
+    try {
+      const out = Function(`"use strict"; return (${s});`)();
+      if (typeof out !== 'number' || !isFinite(out)) return null;
+      return Math.round(out * 100) / 100;
+    } catch {
+      return null;
+    }
+  }
+
+  function renderCalc(){
+    calcExprEl.textContent = expr;
+    const v = safeEval(expr);
+    lastValue = v;
+    calcValEl.textContent = (v === null) ? '表达式无效' : `${v.toFixed(2)} CAD`;
+  }
+
+  function appendKey(k){
+    if (k === 'C') { expr = '0'; renderCalc(); return; }
+    if (k === 'BS') { expr = expr.length <= 1 ? '0' : expr.slice(0, -1); renderCalc(); return; }
+    if (k === '=') { renderCalc(); return; }
+
+    if (expr === '0' && /^[0-9]$/.test(k)) expr = k;
+    else expr += k;
+    renderCalc();
+  }
+
+  calcMask.addEventListener('click', (e)=>{
+    if (e.target === calcMask) hideCalc();
+  });
+  calcClose.addEventListener('click', hideCalc);
+  calcCancel.addEventListener('click', hideCalc);
+
+  document.querySelectorAll('.calc-btn[data-k]').forEach(btn=>{
+    btn.addEventListener('click', ()=> appendKey(btn.dataset.k));
+  });
+
+  function applyCalcResult(){
+    if (lastValue === null) { alert('表达式无效，请修改后再确认'); return; }
+
+    if (calcTarget === 'plan') {
+      planInput.value = String(lastValue);
+      commitPlan(lastValue);
+    } else if (calcTarget === 'today') {
+      todayInput.value = String(lastValue);
+      markDirty();
+      commitTodayTotal(lastValue);
+    }
+    hideCalc();
+  }
+
+  calcOk.addEventListener('click', applyCalcResult);
+  calcUse.addEventListener('click', applyCalcResult);
+
+  document.getElementById('planEditBtn').addEventListener('click', ()=> showCalc('plan'));
+  document.getElementById('todayEditBtn').addEventListener('click', ()=> showCalc('today'));
 
   // 首次加载：恢复 UI
   hydrateUI();
-</script>
+  </script>
 
 </body>
 </html>
