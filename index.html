@@ -3,10 +3,95 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>测试页面</title>
+  <title>轻记账｜客观统计工具</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:#f6f7fb;}
+    .wrap{max-width:680px;margin:0 auto;padding:16px;}
+    .card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.06);}
+    h1{font-size:18px;margin:0 0 6px;}
+    .sub{color:#666;font-size:13px;margin:0 0 14px;line-height:1.5;}
+    label{display:block;font-size:14px;margin:12px 0 6px;}
+    input{width:100%;font-size:16px;padding:12px;border:1px solid #ddd;border-radius:12px;box-sizing:border-box;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+    .btn{font-size:14px;padding:10px 12px;border:0;border-radius:12px;background:#eef0f7;cursor:pointer;}
+    .btn-primary{background:#111;color:#fff;flex:1;min-width:160px;}
+    .btn-mini{font-size:12px;padding:6px 10px;border-radius:10px;}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+    .chip{padding:8px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;}
+    .chip.on{background:#111;color:#fff;border-color:#111;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+    .box{background:#fafbff;border:1px solid #eef0ff;border-radius:12px;padding:10px;}
+    .k{color:#666;font-size:13px;}
+    .v{font-size:18px;font-weight:800;margin-top:2px;}
+    details{margin-top:14px;}
+    summary{cursor:pointer;font-size:14px;}
+    .muted{color:#666;font-size:13px;line-height:1.5;margin-top:12px;}
+  </style>
 </head>
 <body>
-  <h1>页面正常显示</h1>
-  <p>如果你能看到这段文字，说明 index.html 解析正确。</p>
+  <div class="wrap">
+    <div class="card">
+      <h1>轻记账（客观统计）</h1>
+      <p class="sub" id="dateLine">日期会自动显示在这里（后面加逻辑）</p>
+
+      <label>本月计划花销总数（CAD）</label>
+      <input type="number" inputmode="decimal" placeholder="例如 1000" />
+      <div class="row">
+        <button class="btn btn-mini" type="button">修改（计算器）</button>
+        <button class="btn btn-mini" type="button">撤销</button>
+      </div>
+
+      <label>今天花销总数（CAD）</label>
+      <input type="number" inputmode="decimal" placeholder="例如 35" />
+      <div class="row">
+        <button class="btn btn-mini" type="button">修改（计算器）</button>
+        <button class="btn btn-mini" type="button">撤销</button>
+      </div>
+
+      <label>今日花销内容标签（可多选）</label>
+      <div class="chips">
+        <button class="chip" type="button">停车费</button>
+        <button class="chip" type="button">超市购物</button>
+        <button class="chip" type="button">外出吃饭</button>
+        <button class="chip" type="button">礼物</button>
+        <button class="chip" type="button">油费/交通</button>
+        <button class="chip" type="button">生活用品</button>
+        <button class="chip" type="button">账单/订阅</button>
+        <button class="chip" type="button">医疗/药品</button>
+        <button class="chip" type="button">娱乐/休闲</button>
+        <button class="chip" type="button">其他</button>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button class="btn btn-primary" type="button">记录今天（后面加逻辑）</button>
+      </div>
+
+      <div class="grid">
+        <div class="box"><div class="k">截至目前已花</div><div class="v">—</div></div>
+        <div class="box"><div class="k">日均实际（S ÷ d）</div><div class="v">—</div></div>
+        <div class="box"><div class="k">预计到月底总花销（趋势参考）</div><div class="v">—</div></div>
+        <div class="box"><div class="k">为不超支：从明天起后续日均需 ≤</div><div class="v">—</div></div>
+      </div>
+
+      <details>
+        <summary>本月每日列表（将来展开显示每天金额 + 标签）</summary>
+        <div class="muted">这里后面会自动生成每天记录。</div>
+      </details>
+
+      <details>
+        <summary>历史月份（将来展开回看）</summary>
+        <div class="muted">这里后面会列出历史月份列表。</div>
+      </details>
+
+      <p class="muted">说明：这是页面骨架版本，后续我们再把“计算器修改、撤销、自动统计、历史月份、标签DAY统计”等功能逐步接上。</p>
+    </div>
+  </div>
+
+  <script>
+    // 演示：点标签高亮/取消高亮（当前不存储）
+    document.querySelectorAll('.chip').forEach(btn=>{
+      btn.addEventListener('click', ()=> btn.classList.toggle('on'));
+    });
+  </script>
 </body>
 </html>
