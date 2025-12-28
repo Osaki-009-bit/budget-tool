@@ -88,10 +88,26 @@
   </div>
 
   <script>
-    // 演示：点标签高亮/取消高亮（当前不存储）
-    document.querySelectorAll('.chip').forEach(btn=>{
-      btn.addEventListener('click', ()=> btn.classList.toggle('on'));
-    });
+// 1) 日期自动显示（跟设备时间同步）
+(function renderDateLine(){
+  const el = document.getElementById('dateLine');
+  if (!el) return;
+
+  const now = new Date(); // 直接用设备当前时间（手机/电脑自动对齐）
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+
+  const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
+  const w = weekMap[now.getDay()];
+
+  el.textContent = `今天：${y}-${m}-${d}（${w}）  ｜  本月：${y}-${m}`;
+})();
+
+// 2) 标签点亮/取消点亮（当前不存储）
+document.querySelectorAll('.chip').forEach(btn=>{
+  btn.addEventListener('click', ()=> btn.classList.toggle('on'));
+});
   </script>
 </body>
 </html>
