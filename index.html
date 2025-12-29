@@ -36,7 +36,7 @@
     .btn{font-size:14px;padding:10px 12px;border:0;border-radius:12px;background:#eef0f7;cursor:pointer;}
     .btn-primary{background:#111;color:#fff;flex:1;min-width:160px;}
     .btn-confirm{background:#c62828;color:#fff;flex:1;min-width:160px;}
-    .btn-confirm.ready{background:#111;} /* 未改动时黑色 */
+    .btn-confirm.ready{background:#111;}
     .btn-mini{font-size:12px;padding:6px 10px;border-radius:10px;}
     .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
     .chip{padding:8px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;}
@@ -49,13 +49,10 @@
     summary{cursor:pointer;font-size:14px;}
     .muted{color:#666;font-size:13px;line-height:1.5;margin-top:12px;}
 
-    /* 保存提示（用于“保存这天”） */
-    .btn-primary.saved{ background:#2e7d32 !important; }   /* 绿：已保存 */
+    .btn-primary.saved{ background:#2e7d32 !important; }
 
-    /* datePicker 永远黑色 */
     #datePicker.edited{ color:#111; border-color:#ddd; font-weight:400; }
 
-    /* ====== 本月状态日历（今天蓝 / 修改红 / 有记录绿 / 未记录白） ====== */
     #monthCalendar{
       margin-top:8px;
       display:grid;
@@ -77,7 +74,6 @@
     .day-empty{ background:#ffffff; color:#333; }
     .day-pad{ visibility:hidden; }
 
-    /* 左侧颜色说明 */
     .legend{ margin-top:12px; border-top:1px solid #f0f0f0; padding-top:10px; }
     .legend-title{font-weight:800;font-size:13px;margin:0 0 8px;}
     .legend-item{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px;color:#333;}
@@ -87,7 +83,6 @@
     .sw-green{background:#e8f5e9;border-color:#2e7d32;}
     .sw-white{background:#ffffff;border-color:#ddd;}
 
-    /* 计算器弹窗 */
     .modal-mask{
       position:fixed; inset:0;
       background:rgba(0,0,0,.35);
@@ -293,55 +288,28 @@
   </div>
 
   <script>
-  // ===== 日期工具 =====
   const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
   function pad2(n){ return String(n).padStart(2,'0'); }
-  function parseYm(ymStr){
-    const [y,m] = ymStr.split('-').map(Number);
-    return { y, m };
-  }
-  function daysInMonthOf(ymStr){
-    const { y, m } = parseYm(ymStr);
-    return new Date(y, m, 0).getDate();
-  }
-  function parseYmd(ymdStr){
-    const [y,m,d] = ymdStr.split('-').map(Number);
-    return new Date(y, (m||1)-1, d||1);
-  }
-  function weekdayOf(ymdStr){
-    return weekMap[parseYmd(ymdStr).getDay()];
-  }
-  function monthEndYmd(ymStr){
-    return `${ymStr}-${pad2(daysInMonthOf(ymStr))}`;
-  }
+  function parseYm(ymStr){ const [y,m] = ymStr.split('-').map(Number); return { y, m }; }
+  function daysInMonthOf(ymStr){ const { y, m } = parseYm(ymStr); return new Date(y, m, 0).getDate(); }
+  function parseYmd(ymdStr){ const [y,m,d] = ymdStr.split('-').map(Number); return new Date(y, (m||1)-1, d||1); }
+  function weekdayOf(ymdStr){ return weekMap[parseYmd(ymdStr).getDay()]; }
+  function monthEndYmd(ymStr){ return `${ymStr}-${pad2(daysInMonthOf(ymStr))}`; }
 
-  // ===== 今日 =====
   const now = new Date();
   const currentYm = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
   const todayYmd = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
   const currentDayIndex = now.getDate();
 
-  // ===== 存储 =====
   const STORAGE_KEY = 'budgetTool:v3';
-  function loadAll(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
-    catch { return {}; }
-  }
-  function saveAll(all){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-  }
+  function loadAll(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; } }
+  function saveAll(all){ localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); }
   function ensureMonth(all, ym){
     all.months = all.months || {};
     if (!all.months[ym]) {
-      all.months[ym] = {
-        plan: null,
-        days: {},
-        undo: { plan: [], day: [] },
-        startFrom: null,
-        started: false
-      };
+      all.months[ym] = { plan:null, days:{}, undo:{ plan:[], day:[] }, startFrom:null, started:false };
     } else {
-      all.months[ym].undo = all.months[ym].undo || { plan: [], day: [] };
+      all.months[ym].undo = all.months[ym].undo || { plan:[], day:[] };
       all.months[ym].undo.plan = all.months[ym].undo.plan || [];
       all.months[ym].undo.day = all.months[ym].undo.day || [];
       all.months[ym].startFrom = all.months[ym].startFrom || null;
@@ -351,8 +319,6 @@
   }
 
   const all = loadAll();
-
-  // ===== 活动月份 =====
   let activeYm = currentYm;
   let monthData = ensureMonth(all, activeYm);
 
@@ -361,7 +327,6 @@
     saveAll(all);
   }
 
-  // ===== DOM =====
   const monthNav = document.getElementById('monthNav');
   const dateLine = document.getElementById('dateLine');
   const spentLabel = document.getElementById('spentLabel');
@@ -387,10 +352,9 @@
   const chipButtons = Array.from(document.querySelectorAll('.chip'));
   const monthCalendar = document.getElementById('monthCalendar');
 
-  // ===== “确认修改”草稿状态 =====
   let editYmd = todayYmd;
   let draft = { total: null, tags: [] };
-  let dirty = false; // 是否有未确认变更
+  let dirty = false;
 
   function setConfirmState(isDirty){
     dirty = isDirty;
@@ -403,7 +367,6 @@
     }
   }
 
-  // ===== “保存这天”保存提示 =====
   let savedToastTimer = null;
   function markSavedOnRecordBtn(){
     if (savedToastTimer) { clearTimeout(savedToastTimer); savedToastTimer = null; }
@@ -415,7 +378,6 @@
     }, 1200);
   }
 
-  // ===== 工具 =====
   const fmt = (n) => {
     if (n === null || n === undefined || Number.isNaN(n)) return '—';
     const v = Math.round(n * 100) / 100;
@@ -441,7 +403,6 @@
     chipButtons.forEach(b => b.classList.toggle('on', set.has(b.textContent.trim())));
   }
 
-  // ===== 日历渲染 =====
   function renderMonthCalendar(){
     const { y, m } = parseYm(activeYm);
     const days = daysInMonthOf(activeYm);
@@ -474,10 +435,7 @@
     });
   }
 
-  // ===== 统计 =====
-  function cutoffYmdForActiveMonth(){
-    return (activeYm === currentYm) ? todayYmd : monthEndYmd(activeYm);
-  }
+  function cutoffYmdForActiveMonth(){ return (activeYm === currentYm) ? todayYmd : monthEndYmd(activeYm); }
   function calcSpentAndRecordedDays(){
     let sum = 0, days = 0;
     const start = monthData.startFrom || `${activeYm}-01`;
@@ -538,7 +496,6 @@
     renderMonthCalendar();
   }
 
-  // ===== 顶部行 =====
   function renderTopLines(){
     dateLine.textContent = `月份：${activeYm}`;
     if (activeYm === currentYm) {
@@ -554,7 +511,6 @@
     dayLine.textContent = `编辑：${editYmd}（${weekdayOf(editYmd)}）`;
   }
 
-  // ===== 写入与撤销（只有点“确认修改/保存这天”才写入） =====
   function commitPlan(newVal){
     const prev = monthData.plan;
     monthData.undo.plan.push(prev);
@@ -576,8 +532,6 @@
 
     const nowTs = Date.now();
     const isFirstWrite = !existing0 || existing.createdAt === null;
-
-    // 只有“确认修改”才算 edited（且必须是曾经写入过的记录再改）
     const editedFlag = (asConfirmedEdit && !isFirstWrite) ? true : false;
 
     monthData.days[dateStr] = {
@@ -606,7 +560,6 @@
     return null;
   }
 
-  // ===== 草稿管理 =====
   function loadDraftFromRecord(){
     const rec = getDayRecord(editYmd);
     draft.total = (typeof rec.total === 'number') ? rec.total : null;
@@ -615,9 +568,7 @@
     setSelectedTags(draft.tags);
     setConfirmState(false);
   }
-  function onDraftChanged(){
-    setConfirmState(true);
-  }
+  function onDraftChanged(){ setConfirmState(true); }
 
   function switchEditDate(newYmd){
     if (!newYmd) { datePicker.value = editYmd; return; }
@@ -634,7 +585,9 @@
     renderMonthCalendar();
   }
 
-  // ===== 输入监听：只改草稿，不写入 =====
+  function updateDatePickerRange(){ datePicker.min = '2000-01-01'; datePicker.max = todayYmd; }
+
+  // ===== 事件绑定 =====
   planInput.addEventListener('input', () => {
     const v = planInput.value.trim();
     const n = v === '' ? null : Number(v);
@@ -660,30 +613,24 @@
     });
   });
 
-  // ✅ 新增：确认修改（只有它会触发“已修改/红色”）
   confirmBtn.addEventListener('click', ()=>{
     if (isFutureDate(editYmd)) return;
+    if (!dirty) return;
 
-    if (!dirty) return; // 没有变更就不做事
-
-    // 如果该日之前从未写入过，这次确认属于“首次记录”，不标记 edited
     const recBefore = getDayRecord(editYmd);
     const isFirstWrite = !(typeof recBefore.total === 'number' || (recBefore.createdAt !== null));
 
-    commitDay(editYmd, draft.total, draft.tags, !isFirstWrite /* asConfirmedEdit */);
+    commitDay(editYmd, draft.total, draft.tags, !isFirstWrite);
     setConfirmState(false);
   });
 
-  // “保存这天”：用于首次写入或普通保存（不强制当作“修改”）
   recordBtn.addEventListener('click', ()=>{
     if (isFutureDate(editYmd)) return;
-    commitDay(editYmd, draft.total, draft.tags, false /* 不算确认修改 */);
+    commitDay(editYmd, draft.total, draft.tags, false);
     setConfirmState(false);
     markSavedOnRecordBtn();
   });
 
-  // 撤销
-  const dayUndoBtn = document.getElementById('dayUndoBtn');
   dayUndoBtn.addEventListener('click', ()=>{
     const u = popUndoForDate(editYmd);
     if (!u) return;
@@ -696,8 +643,7 @@
     renderMonthCalendar();
   });
 
-  const planUndoBtn2 = document.getElementById('planUndoBtn');
-  planUndoBtn2.addEventListener('click', ()=>{
+  planUndoBtn.addEventListener('click', ()=>{
     if (!monthData.undo.plan.length) return;
     const prev = monthData.undo.plan.pop();
     monthData.plan = prev;
@@ -707,11 +653,6 @@
     buildMonthList();
   });
 
-  // datePicker
-  function updateDatePickerRange(){
-    datePicker.min = '2000-01-01';
-    datePicker.max = todayYmd;
-  }
   datePicker.addEventListener('change', ()=>{
     const picked = datePicker.value;
     if (!picked) return;
@@ -757,9 +698,7 @@
     });
 
     const visibleSet = new Set(arr);
-    if (!visibleSet.has(activeYm)) {
-      switchMonth(currentYm);
-    }
+    if (!visibleSet.has(activeYm)) switchMonth(currentYm);
   }
 
   function pickDefaultEditDateForMonth(ymStr){
