@@ -3,22 +3,35 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>轻记账｜客观统计工具</title>
+<title>轻记账｜账单抽屉</title>
 
 <style>
 body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:#f6f7fb;}
 .wrap{max-width:980px;margin:0 auto;padding:16px;}
 .layout{display:flex;gap:12px;align-items:flex-start;}
-.sidebar{width:170px;position:sticky;top:12px;background:#fff;border-radius:16px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);}
+.sidebar{
+  width:170px;flex:0 0 170px;
+  position:sticky;top:12px;
+  background:#fff;border-radius:16px;padding:12px;
+  box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
 .month-nav{display:flex;flex-direction:column;gap:6px;}
-.month-item{border:1px solid #e6e6e6;border-radius:12px;padding:10px;cursor:pointer;display:flex;justify-content:space-between;}
+.month-item{
+  border:1px solid #e6e6e6;background:#fff;border-radius:12px;
+  padding:10px;cursor:pointer;
+  display:flex;justify-content:space-between;
+}
 .month-item.active{background:#111;color:#fff;}
-.main{flex:1;}
+.main{flex:1;min-width:0;}
 .card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.06);}
-label{display:block;margin-top:12px;font-size:14px;}
-input{width:100%;padding:12px;border-radius:12px;border:1px solid #ddd;}
-.btn-primary{background:#111;color:#fff;border-radius:12px;padding:10px;border:0;cursor:pointer;width:100%;margin-top:10px;}
+h1{font-size:18px;margin:0 0 6px;}
+.sub{color:#666;font-size:13px;margin:0 0 12px;}
+label{display:block;font-size:14px;margin-top:12px;}
+input{width:100%;padding:12px;font-size:16px;border:1px solid #ddd;border-radius:12px;}
+.btn{margin-top:10px;padding:10px;border-radius:12px;border:0;cursor:pointer;}
+.btn-primary{background:#111;color:#fff;width:100%;}
 
+/* ===== 三色月历 ===== */
 #monthCalendar{
   margin-top:8px;
   display:grid;
@@ -34,9 +47,9 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid #ddd;}
   border:2px solid transparent;
 }
 .day-empty{visibility:hidden;}
-.day-none{background:#f0f0f0;color:#999;}
-.day-recorded{background:#e8f5e9;border-color:#2e7d32;}
-.day-edited{background:#fdecea;border-color:#c62828;}
+.day-none{background:#f0f0f0;color:#999;}              /* 灰：无记录 */
+.day-recorded{background:#e8f5e9;border-color:#2e7d32;} /* 绿：有记录 */
+.day-edited{background:#fdecea;border-color:#c62828;}   /* 红：被修改 */
 .day-active{background:#fff;border-color:#111;font-weight:700;}
 </style>
 </head>
@@ -44,44 +57,71 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid #ddd;}
 <body>
 <div class="wrap">
   <div class="layout">
+
     <aside class="sidebar">
+      <div class="sub">月份</div>
       <div class="month-nav" id="monthNav"></div>
     </aside>
 
     <main class="main">
       <div class="card">
+        <h1>账单抽屉</h1>
+        <p class="sub" id="dateLine">月份：—</p>
+
         <label>编辑日期</label>
         <input id="datePicker" type="date" />
+
         <label>本月日历（颜色=状态）</label>
         <div id="monthCalendar"></div>
 
-        <label>当天花销</label>
-        <input id="dayInput" type="number" />
-        <button class="btn-primary" id="recordBtn">保存</button>
+        <label>当天花销（CAD）</label>
+        <input id="dayInput" type="number" placeholder="例如 35" />
+
+        <button class="btn btn-primary" id="recordBtn">保存这天</button>
       </div>
     </main>
+
   </div>
 </div>
 
 <script>
+/* ===== 基础工具 ===== */
 const pad2=n=>String(n).padStart(2,'0');
 const now=new Date();
 const todayYmd=`${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
-let activeYm=todayYmd.slice(0,7);
+const currentYm=todayYmd.slice(0,7);
+
+/* ===== 存储（账单抽屉，单机） ===== */
+const KEY='billDrawer:v1';
+const all=JSON.parse(localStorage.getItem(KEY)||'{}');
+all.months=all.months||{};
+function ensureMonth(ym){
+  all.months[ym]=all.months[ym]||{days:{}};
+  return all.months[ym];
+}
+
+/* ===== 状态 ===== */
+let activeYm=currentYm;
 let editYmd=todayYmd;
+let monthData=ensureMonth(activeYm);
 
-const data=JSON.parse(localStorage.getItem('budgetDemo')||'{}');
-data[activeYm]=data[activeYm]||{};
+/* ===== DOM ===== */
+const monthNav=document.getElementById('monthNav');
+const datePicker=document.getElementById('datePicker');
+const dayInput=document.getElementById('dayInput');
 
+/* ===== 月历渲染 ===== */
 function renderMonthCalendar(){
   const cal=document.getElementById('monthCalendar');
   const days=new Date(activeYm.split('-')[0],activeYm.split('-')[1],0).getDate();
   let html='';
   for(let d=1;d<=days;d++){
     const ymd=`${activeYm}-${pad2(d)}`;
-    const rec=data[activeYm][ymd];
+    const rec=monthData.days[ymd];
     let cls='day-none';
-    if(rec){cls=rec.edited?'day-edited':'day-recorded';}
+    if(rec){
+      cls=rec.edited?'day-edited':'day-recorded';
+    }
     if(ymd===editYmd)cls+=' day-active';
     html+=`<div class="day-cell ${cls}" data-d="${ymd}">${d}</div>`;
   }
@@ -89,22 +129,49 @@ function renderMonthCalendar(){
   cal.querySelectorAll('.day-cell').forEach(el=>{
     el.onclick=()=>{
       editYmd=el.dataset.d;
-      document.getElementById('datePicker').value=editYmd;
-      document.getElementById('dayInput').value=data[activeYm][editYmd]?.total||'';
+      datePicker.value=editYmd;
+      dayInput.value=monthData.days[editYmd]?.total??'';
       renderMonthCalendar();
     };
   });
 }
 
+/* ===== 月份侧栏 ===== */
+function renderMonthNav(){
+  const months=Object.keys(all.months);
+  if(!months.includes(currentYm))months.push(currentYm);
+  months.sort().reverse();
+  monthNav.innerHTML=months.map(m=>{
+    return `<div class="month-item ${m===activeYm?'active':''}" data-ym="${m}">${m}</div>`;
+  }).join('');
+  monthNav.querySelectorAll('.month-item').forEach(el=>{
+    el.onclick=()=>{
+      activeYm=el.dataset.ym;
+      monthData=ensureMonth(activeYm);
+      editYmd=(activeYm===currentYm)?todayYmd:`${activeYm}-01`;
+      datePicker.value=editYmd;
+      dayInput.value=monthData.days[editYmd]?.total??'';
+      renderMonthNav();
+      renderMonthCalendar();
+    };
+  });
+}
+
+/* ===== 保存 ===== */
 document.getElementById('recordBtn').onclick=()=>{
-  const v=document.getElementById('dayInput').value;
-  const prev=data[activeYm][editYmd];
-  data[activeYm][editYmd]={total:Number(v),edited:!!prev};
-  localStorage.setItem('budgetDemo',JSON.stringify(data));
+  const v=Number(dayInput.value);
+  const prev=monthData.days[editYmd];
+  monthData.days[editYmd]={
+    total:isNaN(v)?0:v,
+    edited:!!prev
+  };
+  localStorage.setItem(KEY,JSON.stringify(all));
   renderMonthCalendar();
 };
 
-document.getElementById('datePicker').value=todayYmd;
+/* ===== 初始化 ===== */
+datePicker.value=todayYmd;
+renderMonthNav();
 renderMonthCalendar();
 </script>
 </body>
