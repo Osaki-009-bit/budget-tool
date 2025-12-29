@@ -35,6 +35,8 @@
     .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
     .btn{font-size:14px;padding:10px 12px;border:0;border-radius:12px;background:#eef0f7;cursor:pointer;}
     .btn-primary{background:#111;color:#fff;flex:1;min-width:160px;}
+    .btn-confirm{background:#c62828;color:#fff;flex:1;min-width:160px;}
+    .btn-confirm.ready{background:#111;} /* 未改动时黑色 */
     .btn-mini{font-size:12px;padding:6px 10px;border-radius:10px;}
     .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
     .chip{padding:8px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;}
@@ -47,11 +49,10 @@
     summary{cursor:pointer;font-size:14px;}
     .muted{color:#666;font-size:13px;line-height:1.5;margin-top:12px;}
 
-    /* 保存提示 */
-    .btn-primary.dirty{ background:#c62828 !important; }   /* 红：请保存 */
+    /* 保存提示（用于“保存这天”） */
     .btn-primary.saved{ background:#2e7d32 !important; }   /* 绿：已保存 */
 
-    /* datePicker 不再变红（永远黑色） */
+    /* datePicker 永远黑色 */
     #datePicker.edited{ color:#111; border-color:#ddd; font-weight:400; }
 
     /* ====== 本月状态日历（今天蓝 / 修改红 / 有记录绿 / 未记录白） ====== */
@@ -70,18 +71,14 @@
       border:1px solid #ddd;
       user-select:none;
     }
-    .day-today{ background:#1976d2; color:#fff; font-weight:800; }     /* 今日：蓝底 */
-    .day-edited{ background:#fdecea; color:#c62828; font-weight:800; } /* 有修改：红底 */
-    .day-recorded{ background:#e8f5e9; color:#2e7d32; font-weight:800; } /* 已填写：绿底 */
-    .day-empty{ background:#ffffff; color:#333; }                      /* 未填写：白底 */
-    .day-pad{ visibility:hidden; }                                     /* 月初占位 */
+    .day-today{ background:#1976d2; color:#fff; font-weight:800; }
+    .day-edited{ background:#fdecea; color:#c62828; font-weight:800; }
+    .day-recorded{ background:#e8f5e9; color:#2e7d32; font-weight:800; }
+    .day-empty{ background:#ffffff; color:#333; }
+    .day-pad{ visibility:hidden; }
 
-    /* 左侧颜色说明（新增） */
-    .legend{
-      margin-top:12px;
-      border-top:1px solid #f0f0f0;
-      padding-top:10px;
-    }
+    /* 左侧颜色说明 */
+    .legend{ margin-top:12px; border-top:1px solid #f0f0f0; padding-top:10px; }
     .legend-title{font-weight:800;font-size:13px;margin:0 0 8px;}
     .legend-item{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px;color:#333;}
     .legend-swatch{width:14px;height:14px;border-radius:4px;border:1px solid #ddd;flex:0 0 14px;}
@@ -134,7 +131,6 @@
     .calc-actions{display:flex; gap:10px; margin-top:10px;}
     .calc-actions .btn-primary{flex:1;}
 
-    /* 手机端 */
     @media (max-width: 820px){
       .wrap{max-width:720px;}
       .layout{flex-direction:column;}
@@ -158,7 +154,6 @@
           仅显示“有记录的过往月份”和“当前月”。点击月份可回看/修改该月数据。
         </div>
 
-        <!-- 新增：颜色说明 -->
         <div class="legend">
           <div class="legend-title">颜色说明</div>
           <div class="legend-item"><span class="legend-swatch sw-green"></span>绿色框 = 已填写</div>
@@ -183,7 +178,7 @@
           <label>编辑日期（回改某一天）</label>
           <input id="datePicker" type="date" />
           <div class="sub" id="pickerHint" style="margin:6px 0 0;">
-            只能编辑到今天（不能写未来）。颜色变化以“本月日历/列表”为准。
+            只能编辑到今天（不能写未来）。修改需点“确认修改”才生效。
           </div>
 
           <label>本月日历</label>
@@ -192,7 +187,9 @@
           <label>今日消费总数（CAD）</label>
           <input id="dayInput" type="number" inputmode="decimal" placeholder="例如 35" />
           <div class="sub" id="dayLine" style="margin:6px 0 0;">编辑：—</div>
+
           <div class="row">
+            <button class="btn-confirm ready" id="confirmBtn" type="button">确认修改</button>
             <button class="btn btn-mini" id="dayEditBtn" type="button">修改（计算器）</button>
             <button class="btn btn-mini" id="dayUndoBtn" type="button">撤销</button>
           </div>
@@ -240,7 +237,7 @@
           </details>
 
           <p class="muted">
-            说明：以“日期”为唯一基准；选中哪一天就编辑哪一天；金额=0 也会算作“已填写”。未来日期被禁止写入。
+            说明：输入框改动不会立刻写入；请点击“确认修改”才生效。金额=0 也算“已填写”。未来日期禁止写入。
           </p>
         </div>
       </main>
@@ -318,7 +315,7 @@
     return `${ymStr}-${pad2(daysInMonthOf(ymStr))}`;
   }
 
-  // ===== 今日（真实） =====
+  // ===== 今日 =====
   const now = new Date();
   const currentYm = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
   const todayYmd = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
@@ -359,7 +356,6 @@
   let activeYm = currentYm;
   let monthData = ensureMonth(all, activeYm);
 
-  // 本月未开始时：默认从今天起统计
   if (!monthData.started && (!monthData.startFrom || !String(monthData.startFrom).startsWith(activeYm + '-'))) {
     monthData.startFrom = todayYmd;
     saveAll(all);
@@ -380,6 +376,7 @@
   const planUndoBtn = document.getElementById('planUndoBtn');
   const dayUndoBtn = document.getElementById('dayUndoBtn');
   const recordBtn = document.getElementById('recordBtn');
+  const confirmBtn = document.getElementById('confirmBtn');
 
   const spentVal = document.getElementById('spentVal');
   const avgVal = document.getElementById('avgVal');
@@ -390,30 +387,33 @@
   const chipButtons = Array.from(document.querySelectorAll('.chip'));
   const monthCalendar = document.getElementById('monthCalendar');
 
-  // ===== 保存按钮提示状态 =====
-  let saveState = 'idle'; // idle | dirty | saved
-  let savedToastTimer = null;
-  function setSaveState(state){
-    saveState = state;
-    if (savedToastTimer) { clearTimeout(savedToastTimer); savedToastTimer = null; }
-    recordBtn.classList.remove('dirty','saved');
-    if (state === 'dirty') {
-      recordBtn.classList.add('dirty');
-      recordBtn.textContent = '请保存';
-    } else if (state === 'saved') {
-      recordBtn.classList.add('saved');
-      recordBtn.textContent = '已保存';
-      savedToastTimer = setTimeout(()=>{
-        recordBtn.classList.remove('saved');
-        recordBtn.textContent = '保存这天';
-        saveState = 'idle';
-      }, 1200);
+  // ===== “确认修改”草稿状态 =====
+  let editYmd = todayYmd;
+  let draft = { total: null, tags: [] };
+  let dirty = false; // 是否有未确认变更
+
+  function setConfirmState(isDirty){
+    dirty = isDirty;
+    if (dirty){
+      confirmBtn.classList.remove('ready');
+      confirmBtn.textContent = '请确认修改';
     } else {
-      recordBtn.textContent = '保存这天';
+      confirmBtn.classList.add('ready');
+      confirmBtn.textContent = '确认修改';
     }
   }
-  function markDirty(){ if (saveState !== 'dirty') setSaveState('dirty'); }
-  function markSaved(){ setSaveState('saved'); }
+
+  // ===== “保存这天”保存提示 =====
+  let savedToastTimer = null;
+  function markSavedOnRecordBtn(){
+    if (savedToastTimer) { clearTimeout(savedToastTimer); savedToastTimer = null; }
+    recordBtn.classList.add('saved');
+    recordBtn.textContent = '已保存';
+    savedToastTimer = setTimeout(()=>{
+      recordBtn.classList.remove('saved');
+      recordBtn.textContent = '保存这天';
+    }, 1200);
+  }
 
   // ===== 工具 =====
   const fmt = (n) => {
@@ -421,16 +421,7 @@
     const v = Math.round(n * 100) / 100;
     return `${v.toFixed(2)} CAD`;
   };
-  function isFutureDate(ymdStr){
-    return ymdStr > todayYmd; // YYYY-MM-DD 字符串可直接比
-  }
-  function getSelectedTags(){
-    return chipButtons.filter(b => b.classList.contains('on')).map(b => b.textContent.trim());
-  }
-  function setSelectedTags(tags){
-    const set = new Set(tags || []);
-    chipButtons.forEach(b => b.classList.toggle('on', set.has(b.textContent.trim())));
-  }
+  function isFutureDate(ymdStr){ return ymdStr > todayYmd; }
   function normalizeRecord(rec){
     if (!rec) return { total: null, tags: [], createdAt: null, updatedAt: null, edited: false };
     return {
@@ -441,38 +432,32 @@
       edited: !!rec.edited
     };
   }
-  function getDayRecord(dateStr){
-    return normalizeRecord(monthData.days[dateStr]);
+  function getDayRecord(dateStr){ return normalizeRecord(monthData.days[dateStr]); }
+  function getSelectedTags(){
+    return chipButtons.filter(b => b.classList.contains('on')).map(b => b.textContent.trim());
+  }
+  function setSelectedTags(tags){
+    const set = new Set(tags || []);
+    chipButtons.forEach(b => b.classList.toggle('on', set.has(b.textContent.trim())));
   }
 
-  // ===== 渲染本月日历 =====
+  // ===== 日历渲染 =====
   function renderMonthCalendar(){
-    if (!monthCalendar) return;
-
     const { y, m } = parseYm(activeYm);
     const days = daysInMonthOf(activeYm);
-    const firstDay = new Date(y, m - 1, 1).getDay(); // 0=周日
+    const firstDay = new Date(y, m - 1, 1).getDay();
 
     let html = '';
-
-    for (let i = 0; i < firstDay; i++){
-      html += `<div class="day-cell day-pad"></div>`;
-    }
+    for (let i = 0; i < firstDay; i++) html += `<div class="day-cell day-pad"></div>`;
 
     for (let d = 1; d <= days; d++){
       const ymd = `${activeYm}-${pad2(d)}`;
       const rec = normalizeRecord(monthData.days[ymd]);
 
       let cls = 'day-empty';
-      if (ymd === todayYmd){
-        cls = 'day-today';
-      } else if (rec.edited){
-        cls = 'day-edited';
-      } else if (typeof rec.total === 'number'){
-        cls = 'day-recorded';
-      } else {
-        cls = 'day-empty';
-      }
+      if (ymd === todayYmd) cls = 'day-today';
+      else if (rec.edited) cls = 'day-edited';
+      else if (typeof rec.total === 'number') cls = 'day-recorded';
 
       html += `<div class="day-cell ${cls}" data-date="${ymd}">${d}</div>`;
     }
@@ -489,78 +474,12 @@
     });
   }
 
-  // ===== 编辑日期 =====
-  let editYmd = todayYmd;
-
-  function updateDatePickerRange(){
-    datePicker.min = '2000-01-01';
-    datePicker.max = todayYmd;
-  }
-
-  function renderTopLines(){
-    dateLine.textContent = `月份：${activeYm}`;
-    if (activeYm === currentYm) {
-      spentLabel.textContent = '截至目前已花';
-      needLabel.textContent = '为不超支：从明天起后续日均需 ≤';
-    } else {
-      spentLabel.textContent = '本月已花';
-      needLabel.textContent = '该月已结束';
-    }
-  }
-
-  function renderEditLine(){
-    datePicker.classList.remove('edited');
-    dayLine.textContent = `编辑：${editYmd}（${weekdayOf(editYmd)}）`;
-  }
-
-  function flushSaveNow(){
-    if (saveState !== 'dirty') return;
-    const v = dayInput.value.trim();
-    const n = v === '' ? null : Number(v);
-    if (v !== '' && Number.isNaN(n)) return;
-    commitDay(editYmd, n, getSelectedTags());
-  }
-
-  function switchEditDate(newYmd){
-    flushSaveNow();
-
-    if (!newYmd) { datePicker.value = editYmd; return; }
-
-    if (isFutureDate(newYmd)) {
-      alert('不能填写未来日期（例如明天）。');
-      datePicker.value = editYmd;
-      return;
-    }
-
-    const ym = newYmd.slice(0,7);
-    if (ym !== activeYm) {
-      if (ym > currentYm) {
-        alert('未来月份不可编辑。');
-        datePicker.value = editYmd;
-        return;
-      }
-      switchMonth(ym, newYmd);
-      return;
-    }
-
-    editYmd = newYmd;
-    const rec = getDayRecord(editYmd);
-    dayInput.value = (rec.total ?? '') === null ? '' : (rec.total ?? '');
-    setSelectedTags(rec.tags || []);
-    renderEditLine();
-    renderStatsAndList();
-    setSaveState('idle');
-    renderMonthCalendar();
-  }
-
-  // ===== 统计：当前月按今天截止；历史月按月末截止 =====
+  // ===== 统计 =====
   function cutoffYmdForActiveMonth(){
     return (activeYm === currentYm) ? todayYmd : monthEndYmd(activeYm);
   }
-
   function calcSpentAndRecordedDays(){
-    let sum = 0;
-    let days = 0;
+    let sum = 0, days = 0;
     const start = monthData.startFrom || `${activeYm}-01`;
     const cutoff = cutoffYmdForActiveMonth();
 
@@ -570,33 +489,17 @@
       if (dateStr > cutoff) continue;
 
       const rec = normalizeRecord(rec0);
-      if (typeof rec.total === 'number') {
-        sum += rec.total;
-        days += 1;
-      }
+      if (typeof rec.total === 'number') { sum += rec.total; days += 1; }
     }
     return { sum, days };
   }
-
   function setBalanceDisplay(balance){
-    if (balance === null) {
-      balanceVal.textContent = '—';
-      balanceVal.style.color = '#111';
-      return;
-    }
+    if (balance === null) { balanceVal.textContent = '—'; balanceVal.style.color = '#111'; return; }
     const abs = Math.abs(balance);
-    if (balance > 0) {
-      balanceVal.textContent = `${abs.toFixed(2)} CAD  剩余`;
-      balanceVal.style.color = '#2e7d32';
-    } else if (balance < 0) {
-      balanceVal.textContent = `${abs.toFixed(2)} CAD  超支`;
-      balanceVal.style.color = '#c62828';
-    } else {
-      balanceVal.textContent = `0.00 CAD  平衡`;
-      balanceVal.style.color = '#111';
-    }
+    if (balance > 0) { balanceVal.textContent = `${abs.toFixed(2)} CAD  剩余`; balanceVal.style.color = '#2e7d32'; }
+    else if (balance < 0) { balanceVal.textContent = `${abs.toFixed(2)} CAD  超支`; balanceVal.style.color = '#c62828'; }
+    else { balanceVal.textContent = `0.00 CAD  平衡`; balanceVal.style.color = '#111'; }
   }
-
   function renderStatsAndList(){
     const P = (typeof monthData.plan === 'number') ? monthData.plan : null;
     const { sum: S, days: d } = calcSpentAndRecordedDays();
@@ -616,22 +519,16 @@
     }
 
     const keys = Object.keys(monthData.days).filter(k => k.startsWith(activeYm+'-')).sort();
-    if (!keys.length) {
-      monthList.textContent = '（暂无记录）';
-      renderMonthCalendar();
-      return;
-    }
+    if (!keys.length) { monthList.textContent = '（暂无记录）'; renderMonthCalendar(); return; }
 
     monthList.innerHTML = keys.map(k => {
       const rec = normalizeRecord(monthData.days[k]);
       const money = (typeof rec.total === 'number') ? `${rec.total.toFixed(2)} CAD` : '—';
       const tags = (rec.tags && rec.tags.length) ? rec.tags.join(' / ') : '（无标签）';
-
       const dateHtml = rec.edited
         ? `<span style="color:#c62828;font-weight:700;">${k}</span>`
         : `<span>${k}</span>`;
       const editedBadge = rec.edited ? ` <span style="color:#c62828;">（已改）</span>` : '';
-
       return `<div style="padding:6px 0;border-bottom:1px dashed #eee;">
                 <strong>${dateHtml}</strong>${editedBadge} ｜ ${money}<br/>
                 <span style="color:#666;font-size:13px;">${tags}</span>
@@ -641,7 +538,23 @@
     renderMonthCalendar();
   }
 
-  // ===== 写入与撤销 =====
+  // ===== 顶部行 =====
+  function renderTopLines(){
+    dateLine.textContent = `月份：${activeYm}`;
+    if (activeYm === currentYm) {
+      spentLabel.textContent = '截至目前已花';
+      needLabel.textContent = '为不超支：从明天起后续日均需 ≤';
+    } else {
+      spentLabel.textContent = '本月已花';
+      needLabel.textContent = '该月已结束';
+    }
+  }
+  function renderEditLine(){
+    datePicker.classList.remove('edited');
+    dayLine.textContent = `编辑：${editYmd}（${weekdayOf(editYmd)}）`;
+  }
+
+  // ===== 写入与撤销（只有点“确认修改/保存这天”才写入） =====
   function commitPlan(newVal){
     const prev = monthData.plan;
     monthData.undo.plan.push(prev);
@@ -649,34 +562,30 @@
     monthData.plan = newVal;
     saveAll(all);
     renderStatsAndList();
-    buildMonthList(); // ✅ 可能影响“是否显示该月”（例如首次开始记录后）
+    buildMonthList();
   }
 
-  function commitDay(dateStr, newTotal, newTags){
-    if (isFutureDate(dateStr)) {
-      alert('不能填写未来日期（例如明天）。');
-      return;
-    }
+  function commitDay(dateStr, newTotal, newTags, asConfirmedEdit){
+    if (isFutureDate(dateStr)) { alert('不能填写未来日期（例如明天）。'); return; }
 
     const existing0 = monthData.days[dateStr];
     const existing = normalizeRecord(existing0);
 
-    monthData.undo.day.push({
-      date: dateStr,
-      prev: { ...existing, tags: existing.tags.slice() }
-    });
+    monthData.undo.day.push({ date: dateStr, prev: { ...existing, tags: existing.tags.slice() } });
     if (monthData.undo.day.length > 120) monthData.undo.day.shift();
 
     const nowTs = Date.now();
     const isFirstWrite = !existing0 || existing.createdAt === null;
-    const edited = isFirstWrite ? false : true;
+
+    // 只有“确认修改”才算 edited（且必须是曾经写入过的记录再改）
+    const editedFlag = (asConfirmedEdit && !isFirstWrite) ? true : false;
 
     monthData.days[dateStr] = {
       total: newTotal,
       tags: Array.isArray(newTags) ? newTags.slice() : [],
       createdAt: isFirstWrite ? nowTs : existing.createdAt,
       updatedAt: nowTs,
-      edited: existing.edited || edited
+      edited: existing.edited || editedFlag
     };
 
     monthData.started = true;
@@ -685,8 +594,7 @@
     saveAll(all);
     renderStatsAndList();
     renderEditLine();
-    markSaved();
-    buildMonthList(); // ✅ 新增：保存后刷新月份列表（满足“有记录才显示”）
+    buildMonthList();
   }
 
   function popUndoForDate(dateStr){
@@ -698,57 +606,98 @@
     return null;
   }
 
-  // ===== 防抖 =====
-  function debounce(fn, wait=300){
-    let t = null;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), wait);
-    };
+  // ===== 草稿管理 =====
+  function loadDraftFromRecord(){
+    const rec = getDayRecord(editYmd);
+    draft.total = (typeof rec.total === 'number') ? rec.total : null;
+    draft.tags = (rec.tags || []).slice();
+    dayInput.value = (draft.total === null) ? '' : String(draft.total);
+    setSelectedTags(draft.tags);
+    setConfirmState(false);
   }
-  const savePlanDebounced = debounce((n) => commitPlan(n), 300);
-  const saveDayDebounced = debounce((dateStr, n, tags) => commitDay(dateStr, n, tags), 300);
+  function onDraftChanged(){
+    setConfirmState(true);
+  }
 
-  // ===== 输入监听 =====
+  function switchEditDate(newYmd){
+    if (!newYmd) { datePicker.value = editYmd; return; }
+    if (isFutureDate(newYmd)) { alert('不能填写未来日期（例如明天）。'); datePicker.value = editYmd; return; }
+
+    const ym = newYmd.slice(0,7);
+    if (ym !== activeYm) { switchMonth(ym, newYmd); return; }
+
+    editYmd = newYmd;
+    datePicker.value = editYmd;
+    renderEditLine();
+    loadDraftFromRecord();
+    renderStatsAndList();
+    renderMonthCalendar();
+  }
+
+  // ===== 输入监听：只改草稿，不写入 =====
   planInput.addEventListener('input', () => {
     const v = planInput.value.trim();
     const n = v === '' ? null : Number(v);
     if (v !== '' && Number.isNaN(n)) return;
-    savePlanDebounced(n);
+    commitPlan(n);
   });
 
   dayInput.addEventListener('input', () => {
     if (isFutureDate(editYmd)) return;
-
     const v = dayInput.value.trim();
     const n = v === '' ? null : Number(v);
     if (v !== '' && Number.isNaN(n)) return;
-    markDirty();
-    saveDayDebounced(editYmd, n, getSelectedTags());
+    draft.total = n;
+    onDraftChanged();
   });
 
   chipButtons.forEach(btn=>{
     btn.addEventListener('click', ()=>{
       if (isFutureDate(editYmd)) return;
-
       btn.classList.toggle('on');
-      markDirty();
-      const rec = getDayRecord(editYmd);
-      const currentTotal = (typeof rec.total === 'number') ? rec.total : null;
-      saveDayDebounced(editYmd, currentTotal, getSelectedTags());
+      draft.tags = getSelectedTags();
+      onDraftChanged();
     });
   });
 
-  recordBtn.addEventListener('click', ()=>{
+  // ✅ 新增：确认修改（只有它会触发“已修改/红色”）
+  confirmBtn.addEventListener('click', ()=>{
     if (isFutureDate(editYmd)) return;
 
-    const v = dayInput.value.trim();
-    const n = v === '' ? null : Number(v);
-    if (v !== '' && Number.isNaN(n)) return;
-    commitDay(editYmd, n, getSelectedTags());
+    if (!dirty) return; // 没有变更就不做事
+
+    // 如果该日之前从未写入过，这次确认属于“首次记录”，不标记 edited
+    const recBefore = getDayRecord(editYmd);
+    const isFirstWrite = !(typeof recBefore.total === 'number' || (recBefore.createdAt !== null));
+
+    commitDay(editYmd, draft.total, draft.tags, !isFirstWrite /* asConfirmedEdit */);
+    setConfirmState(false);
   });
 
-  planUndoBtn.addEventListener('click', ()=>{
+  // “保存这天”：用于首次写入或普通保存（不强制当作“修改”）
+  recordBtn.addEventListener('click', ()=>{
+    if (isFutureDate(editYmd)) return;
+    commitDay(editYmd, draft.total, draft.tags, false /* 不算确认修改 */);
+    setConfirmState(false);
+    markSavedOnRecordBtn();
+  });
+
+  // 撤销
+  const dayUndoBtn = document.getElementById('dayUndoBtn');
+  dayUndoBtn.addEventListener('click', ()=>{
+    const u = popUndoForDate(editYmd);
+    if (!u) return;
+    monthData.days[editYmd] = u.prev;
+    saveAll(all);
+    loadDraftFromRecord();
+    renderStatsAndList();
+    renderEditLine();
+    buildMonthList();
+    renderMonthCalendar();
+  });
+
+  const planUndoBtn2 = document.getElementById('planUndoBtn');
+  planUndoBtn2.addEventListener('click', ()=>{
     if (!monthData.undo.plan.length) return;
     const prev = monthData.undo.plan.pop();
     monthData.plan = prev;
@@ -758,45 +707,24 @@
     buildMonthList();
   });
 
-  dayUndoBtn.addEventListener('click', ()=>{
-    const u = popUndoForDate(editYmd);
-    if (!u) return;
-
-    monthData.days[editYmd] = u.prev;
-    saveAll(all);
-
-    const rec = normalizeRecord(u.prev);
-    dayInput.value = (rec.total ?? '') === null ? '' : (rec.total ?? '');
-    setSelectedTags(rec.tags || []);
-    renderStatsAndList();
-    renderEditLine();
-    markSaved();
-    buildMonthList();
-  });
-
-  window.addEventListener('pagehide', flushSaveNow);
-  document.addEventListener('visibilitychange', ()=> { if (document.hidden) flushSaveNow(); });
-
+  // datePicker
+  function updateDatePickerRange(){
+    datePicker.min = '2000-01-01';
+    datePicker.max = todayYmd;
+  }
   datePicker.addEventListener('change', ()=>{
     const picked = datePicker.value;
     if (!picked) return;
-
-    if (isFutureDate(picked)) {
-      alert('不能填写未来日期（例如明天）。');
-      datePicker.value = editYmd;
-      return;
-    }
     switchEditDate(picked);
   });
 
-  // ===== 月份侧边栏（核心改动：仅显示“有记录的过往月份 + 当前月”） =====
+  // ===== 月份侧边栏 =====
   function monthRecordedDaysCount(ymStr){
     const md = ensureMonth(all, ymStr);
     let c = 0;
     for (const [k, rec0] of Object.entries(md.days)) {
       if (!k.startsWith(ymStr + '-')) continue;
       const rec = normalizeRecord(rec0);
-      // 只要 total 是 number（包括 0）就算“已记录”
       if (typeof rec.total === 'number') c++;
     }
     return c;
@@ -806,12 +734,7 @@
     const months = new Set(Object.keys((all.months || {})));
     months.add(currentYm);
 
-    // 仅保留 <= 当前月
     const arr0 = Array.from(months).filter(m => m <= currentYm);
-
-    // ✅ 过滤规则：
-    // - 当前月：永远显示
-    // - 过往月份：必须“至少记录过 1 天”才显示
     const arr = arr0
       .filter(m => (m === currentYm) || (monthRecordedDaysCount(m) > 0))
       .sort((a,b)=> (a>b ? -1 : 1));
@@ -833,7 +756,6 @@
       });
     });
 
-    // ✅ 如果当前 activeYm 被过滤掉（例如你把该月记录都撤销没了），自动回到当前月
     const visibleSet = new Set(arr);
     if (!visibleSet.has(activeYm)) {
       switchMonth(currentYm);
@@ -850,12 +772,7 @@
   }
 
   function switchMonth(newYm, desiredYmd = null){
-    flushSaveNow();
-
-    if (newYm > currentYm) {
-      alert('未来月份不可编辑。');
-      return;
-    }
+    if (newYm > currentYm) { alert('未来月份不可编辑。'); return; }
 
     activeYm = newYm;
     monthData = ensureMonth(all, activeYm);
@@ -866,27 +783,18 @@
     }
 
     planInput.value = (monthData.plan ?? '') === null ? '' : (monthData.plan ?? '');
-
     updateDatePickerRange();
 
-    if (desiredYmd && String(desiredYmd).startsWith(activeYm + '-')) {
-      editYmd = desiredYmd;
-    } else {
-      editYmd = pickDefaultEditDateForMonth(activeYm);
-    }
+    if (desiredYmd && String(desiredYmd).startsWith(activeYm + '-')) editYmd = desiredYmd;
+    else editYmd = pickDefaultEditDateForMonth(activeYm);
 
     if (isFutureDate(editYmd)) editYmd = todayYmd;
 
     datePicker.value = editYmd;
-
-    const rec = getDayRecord(editYmd);
-    dayInput.value = (rec.total ?? '') === null ? '' : (rec.total ?? '');
-    setSelectedTags(rec.tags || []);
-
     renderTopLines();
     renderEditLine();
+    loadDraftFromRecord();
     renderStatsAndList();
-    setSaveState('idle');
     buildMonthList();
     renderMonthCalendar();
   }
@@ -908,7 +816,7 @@
     calcTarget = target;
     const base = target === 'plan'
       ? (planInput.value.trim() || (typeof monthData.plan === 'number' ? String(monthData.plan) : ''))
-      : (dayInput.value.trim() || (getDayRecord(editYmd).total != null ? String(getDayRecord(editYmd).total) : ''));
+      : (dayInput.value.trim() || (draft.total != null ? String(draft.total) : ''));
     expr = (base === '' ? '0' : base);
     renderCalc();
     calcMask.style.display = 'flex';
@@ -958,8 +866,8 @@
     } else if (calcTarget === 'day') {
       if (isFutureDate(editYmd)) { alert('不能填写未来日期。'); return; }
       dayInput.value = String(lastValue);
-      markDirty();
-      commitDay(editYmd, lastValue, getSelectedTags());
+      draft.total = lastValue;
+      onDraftChanged();
     }
     hideCalc();
   }
@@ -978,14 +886,10 @@
     datePicker.value = editYmd;
 
     planInput.value = (monthData.plan ?? '') === null ? '' : (monthData.plan ?? '');
-    const rec = getDayRecord(editYmd);
-    dayInput.value = (rec.total ?? '') === null ? '' : (rec.total ?? '');
-    setSelectedTags(rec.tags || []);
-
     renderTopLines();
     renderEditLine();
+    loadDraftFromRecord();
     renderStatsAndList();
-    setSaveState('idle');
     renderMonthCalendar();
   }
   hydrateUI();
