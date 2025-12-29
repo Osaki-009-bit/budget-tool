@@ -32,11 +32,9 @@
     .sub{color:#666;font-size:13px;margin:0 0 14px;line-height:1.5;}
     label{display:block;font-size:14px;margin:12px 0 6px;}
     input{width:100%;font-size:16px;padding:12px;border:1px solid #ddd;border-radius:12px;box-sizing:border-box;color:#111;}
-    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;}
     .btn{font-size:14px;padding:10px 12px;border:0;border-radius:12px;background:#eef0f7;cursor:pointer;}
     .btn-primary{background:#111;color:#fff;flex:1;min-width:160px;}
-    .btn-confirm{background:#c62828;color:#fff;flex:1;min-width:160px;}
-    .btn-confirm.ready{background:#111;}
     .btn-mini{font-size:12px;padding:6px 10px;border-radius:10px;}
     .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
     .chip{padding:8px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;}
@@ -49,10 +47,13 @@
     summary{cursor:pointer;font-size:14px;}
     .muted{color:#666;font-size:13px;line-height:1.5;margin-top:12px;}
 
+    /* 保存提示（用于“保存这天”） */
     .btn-primary.saved{ background:#2e7d32 !important; }
 
+    /* datePicker 永远黑色 */
     #datePicker.edited{ color:#111; border-color:#ddd; font-weight:400; }
 
+    /* ====== 本月状态日历（今天蓝 / 修改红 / 有记录绿 / 未记录白） ====== */
     #monthCalendar{
       margin-top:8px;
       display:grid;
@@ -67,13 +68,25 @@
       cursor:pointer;
       border:1px solid #ddd;
       user-select:none;
+      position:relative;
     }
-    .day-today{ background:#1976d2; color:#fff; font-weight:800; }
+    .day-today{ background:#1976d2; color:#fff; font-weight:800; border-color:#1976d2; }
     .day-edited{ background:#fdecea; color:#c62828; font-weight:800; }
     .day-recorded{ background:#e8f5e9; color:#2e7d32; font-weight:800; }
     .day-empty{ background:#ffffff; color:#333; }
     .day-pad{ visibility:hidden; }
 
+    /* 新增：当前“选中编辑日期”蓝色描边（不改底色） */
+    .day-selected{
+      box-shadow:0 0 0 2px #1976d2 inset;
+      border-color:#1976d2;
+    }
+    /* 若今天也是选中：保持今天蓝底，同时再加内描边也可接受 */
+    .day-today.day-selected{
+      box-shadow:0 0 0 2px rgba(255,255,255,.85) inset;
+    }
+
+    /* 左侧颜色说明 */
     .legend{ margin-top:12px; border-top:1px solid #f0f0f0; padding-top:10px; }
     .legend-title{font-weight:800;font-size:13px;margin:0 0 8px;}
     .legend-item{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px;color:#333;}
@@ -83,6 +96,32 @@
     .sw-green{background:#e8f5e9;border-color:#2e7d32;}
     .sw-white{background:#ffffff;border-color:#ddd;}
 
+    /* ===== 确认修改：默认灰禁用，变更后黑可点 ===== */
+    .btn-confirm{
+      font-size:14px;
+      padding:10px 14px;
+      border:0;border-radius:12px;
+      background:#111;color:#fff;
+      cursor:pointer;
+      min-width:140px; /* 缩短 */
+      flex:0 0 auto;
+    }
+    .btn-confirm:disabled{
+      background:#e0e0e0;
+      color:#888;
+      cursor:not-allowed;
+    }
+    .btn-cancel{
+      font-size:14px;
+      padding:10px 14px;
+      border:0;border-radius:12px;
+      background:#f0f0f0;
+      cursor:pointer;
+      min-width:140px;
+      flex:0 0 auto;
+    }
+
+    /* 计算器弹窗 */
     .modal-mask{
       position:fixed; inset:0;
       background:rgba(0,0,0,.35);
@@ -183,8 +222,10 @@
           <input id="dayInput" type="number" inputmode="decimal" placeholder="例如 35" />
           <div class="sub" id="dayLine" style="margin:6px 0 0;">编辑：—</div>
 
+          <!-- 新版：确认修改短 + 取消修改 -->
           <div class="row">
-            <button class="btn-confirm ready" id="confirmBtn" type="button">确认修改</button>
+            <button class="btn-confirm" id="confirmBtn" type="button" disabled>确认修改</button>
+            <button class="btn-cancel" id="cancelBtn" type="button">取消修改</button>
             <button class="btn btn-mini" id="dayEditBtn" type="button">修改（计算器）</button>
             <button class="btn btn-mini" id="dayUndoBtn" type="button">撤销</button>
           </div>
@@ -232,7 +273,7 @@
           </details>
 
           <p class="muted">
-            说明：输入框改动不会立刻写入；请点击“确认修改”才生效。金额=0 也算“已填写”。未来日期禁止写入。
+            说明：输入框改动不会立刻写入；只有产生修改行为时，“确认修改”才会变为可点击。点“取消修改”可放弃未确认改动。
           </p>
         </div>
       </main>
@@ -288,6 +329,7 @@
   </div>
 
   <script>
+  // ===== 日期工具 =====
   const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
   function pad2(n){ return String(n).padStart(2,'0'); }
   function parseYm(ymStr){ const [y,m] = ymStr.split('-').map(Number); return { y, m }; }
@@ -296,11 +338,13 @@
   function weekdayOf(ymdStr){ return weekMap[parseYmd(ymdStr).getDay()]; }
   function monthEndYmd(ymStr){ return `${ymStr}-${pad2(daysInMonthOf(ymStr))}`; }
 
+  // ===== 今日 =====
   const now = new Date();
   const currentYm = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
   const todayYmd = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
   const currentDayIndex = now.getDate();
 
+  // ===== 存储 =====
   const STORAGE_KEY = 'budgetTool:v3';
   function loadAll(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; } }
   function saveAll(all){ localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); }
@@ -327,6 +371,7 @@
     saveAll(all);
   }
 
+  // ===== DOM =====
   const monthNav = document.getElementById('monthNav');
   const dateLine = document.getElementById('dateLine');
   const spentLabel = document.getElementById('spentLabel');
@@ -342,6 +387,7 @@
   const dayUndoBtn = document.getElementById('dayUndoBtn');
   const recordBtn = document.getElementById('recordBtn');
   const confirmBtn = document.getElementById('confirmBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
 
   const spentVal = document.getElementById('spentVal');
   const avgVal = document.getElementById('avgVal');
@@ -352,21 +398,21 @@
   const chipButtons = Array.from(document.querySelectorAll('.chip'));
   const monthCalendar = document.getElementById('monthCalendar');
 
+  // ===== 草稿与状态 =====
   let editYmd = todayYmd;
   let draft = { total: null, tags: [] };
-  let dirty = false;
+  let dirty = false; // 有未确认改动？
 
   function setConfirmState(isDirty){
     dirty = isDirty;
-    if (dirty){
-      confirmBtn.classList.remove('ready');
-      confirmBtn.textContent = '请确认修改';
-    } else {
-      confirmBtn.classList.add('ready');
-      confirmBtn.textContent = '确认修改';
-    }
+
+    // 规则：只有“发生修改行为”才可点确认
+    confirmBtn.disabled = !dirty;
+    // 文字保持一致即可
+    confirmBtn.textContent = '确认修改';
   }
 
+  // 保存提示（用于“保存这天”）
   let savedToastTimer = null;
   function markSavedOnRecordBtn(){
     if (savedToastTimer) { clearTimeout(savedToastTimer); savedToastTimer = null; }
@@ -378,6 +424,7 @@
     }, 1200);
   }
 
+  // ===== 工具 =====
   const fmt = (n) => {
     if (n === null || n === undefined || Number.isNaN(n)) return '—';
     const v = Math.round(n * 100) / 100;
@@ -403,6 +450,7 @@
     chipButtons.forEach(b => b.classList.toggle('on', set.has(b.textContent.trim())));
   }
 
+  // ===== 日历渲染：加“选中日期蓝描边” =====
   function renderMonthCalendar(){
     const { y, m } = parseYm(activeYm);
     const days = daysInMonthOf(activeYm);
@@ -420,7 +468,10 @@
       else if (rec.edited) cls = 'day-edited';
       else if (typeof rec.total === 'number') cls = 'day-recorded';
 
-      html += `<div class="day-cell ${cls}" data-date="${ymd}">${d}</div>`;
+      // 选中日期描边
+      const selectedCls = (ymd === editYmd) ? ' day-selected' : '';
+
+      html += `<div class="day-cell ${cls}${selectedCls}" data-date="${ymd}">${d}</div>`;
     }
 
     monthCalendar.innerHTML = html;
@@ -435,7 +486,10 @@
     });
   }
 
-  function cutoffYmdForActiveMonth(){ return (activeYm === currentYm) ? todayYmd : monthEndYmd(activeYm); }
+  // ===== 统计 =====
+  function cutoffYmdForActiveMonth(){
+    return (activeYm === currentYm) ? todayYmd : monthEndYmd(activeYm);
+  }
   function calcSpentAndRecordedDays(){
     let sum = 0, days = 0;
     const start = monthData.startFrom || `${activeYm}-01`;
@@ -496,6 +550,7 @@
     renderMonthCalendar();
   }
 
+  // ===== 顶部行 =====
   function renderTopLines(){
     dateLine.textContent = `月份：${activeYm}`;
     if (activeYm === currentYm) {
@@ -511,6 +566,7 @@
     dayLine.textContent = `编辑：${editYmd}（${weekdayOf(editYmd)}）`;
   }
 
+  // ===== 写入与撤销（只有确认/保存才写入） =====
   function commitPlan(newVal){
     const prev = monthData.plan;
     monthData.undo.plan.push(prev);
@@ -532,6 +588,8 @@
 
     const nowTs = Date.now();
     const isFirstWrite = !existing0 || existing.createdAt === null;
+
+    // 只有“确认修改”且不是首次写入，才算 edited
     const editedFlag = (asConfirmedEdit && !isFirstWrite) ? true : false;
 
     monthData.days[dateStr] = {
@@ -560,15 +618,21 @@
     return null;
   }
 
+  // ===== 草稿管理 =====
   function loadDraftFromRecord(){
     const rec = getDayRecord(editYmd);
     draft.total = (typeof rec.total === 'number') ? rec.total : null;
     draft.tags = (rec.tags || []).slice();
     dayInput.value = (draft.total === null) ? '' : String(draft.total);
     setSelectedTags(draft.tags);
+
+    // 切换/加载时：没有“修改行为” -> 确认修改灰不可点
     setConfirmState(false);
   }
-  function onDraftChanged(){ setConfirmState(true); }
+  function onDraftChanged(){
+    // 产生修改行为 -> 确认修改变黑可点
+    setConfirmState(true);
+  }
 
   function switchEditDate(newYmd){
     if (!newYmd) { datePicker.value = editYmd; return; }
@@ -581,13 +645,13 @@
     datePicker.value = editYmd;
     renderEditLine();
     loadDraftFromRecord();
+
+    // 关键：刷新日历描边
     renderStatsAndList();
     renderMonthCalendar();
   }
 
-  function updateDatePickerRange(){ datePicker.min = '2000-01-01'; datePicker.max = todayYmd; }
-
-  // ===== 事件绑定 =====
+  // ===== 输入监听：只改草稿，不写入 =====
   planInput.addEventListener('input', () => {
     const v = planInput.value.trim();
     const n = v === '' ? null : Number(v);
@@ -613,17 +677,26 @@
     });
   });
 
+  // ✅ 确认修改：只有 dirty 才能点（按钮本身 disabled 控制）
   confirmBtn.addEventListener('click', ()=>{
+    if (confirmBtn.disabled) return;
     if (isFutureDate(editYmd)) return;
-    if (!dirty) return;
 
+    // 是否首次写入？
     const recBefore = getDayRecord(editYmd);
     const isFirstWrite = !(typeof recBefore.total === 'number' || (recBefore.createdAt !== null));
 
-    commitDay(editYmd, draft.total, draft.tags, !isFirstWrite);
+    commitDay(editYmd, draft.total, draft.tags, !isFirstWrite /* asConfirmedEdit */);
     setConfirmState(false);
   });
 
+  // ✅ 取消修改：恢复为原记录（不写入）
+  cancelBtn.addEventListener('click', ()=>{
+    loadDraftFromRecord();
+    renderMonthCalendar(); // 保证描边正常
+  });
+
+  // 保存这天：用于首次写入或普通保存（不强制当作“修改”）
   recordBtn.addEventListener('click', ()=>{
     if (isFutureDate(editYmd)) return;
     commitDay(editYmd, draft.total, draft.tags, false);
@@ -631,6 +704,7 @@
     markSavedOnRecordBtn();
   });
 
+  // 撤销
   dayUndoBtn.addEventListener('click', ()=>{
     const u = popUndoForDate(editYmd);
     if (!u) return;
@@ -653,6 +727,11 @@
     buildMonthList();
   });
 
+  // datePicker
+  function updateDatePickerRange(){
+    datePicker.min = '2000-01-01';
+    datePicker.max = todayYmd;
+  }
   datePicker.addEventListener('change', ()=>{
     const picked = datePicker.value;
     if (!picked) return;
@@ -698,7 +777,9 @@
     });
 
     const visibleSet = new Set(arr);
-    if (!visibleSet.has(activeYm)) switchMonth(currentYm);
+    if (!visibleSet.has(activeYm)) {
+      switchMonth(currentYm);
+    }
   }
 
   function pickDefaultEditDateForMonth(ymStr){
