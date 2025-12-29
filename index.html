@@ -31,7 +31,7 @@
     h1{font-size:18px;margin:0 0 6px;}
     .sub{color:#666;font-size:13px;margin:0 0 14px;line-height:1.5;}
     label{display:block;font-size:14px;margin:12px 0 6px;}
-    input{width:100%;font-size:16px;padding:12px;border:1px solid #ddd;border-radius:12px;box-sizing:border-box;}
+    input{width:100%;font-size:16px;padding:12px;border:1px solid #ddd;border-radius:12px;box-sizing:border-box;color:#111;}
     .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
     .btn{font-size:14px;padding:10px 12px;border:0;border-radius:12px;background:#eef0f7;cursor:pointer;}
     .btn-primary{background:#111;color:#fff;flex:1;min-width:160px;}
@@ -51,10 +51,10 @@
     .btn-primary.dirty{ background:#c62828 !important; }   /* 红：请保存 */
     .btn-primary.saved{ background:#2e7d32 !important; }   /* 绿：已保存 */
 
-    /* 日期输入框标红：曾修改过 */
-    #datePicker.edited{ color:#c62828; border-color:#c62828; font-weight:700; }
+    /* ✅ 关键：datePicker 不再变红（永远黑色） */
+    #datePicker.edited{ color:#111; border-color:#ddd; font-weight:400; }
 
-    /* ====== 新增：本月状态日历（今天蓝 / 修改红 / 有记录绿 / 未记录白） ====== */
+    /* ====== 本月状态日历（今天蓝 / 修改红 / 有记录绿 / 未记录白） ====== */
     #monthCalendar{
       margin-top:8px;
       display:grid;
@@ -70,11 +70,11 @@
       border:1px solid #ddd;
       user-select:none;
     }
-    .day-today{ background:#1976d2; color:#fff; font-weight:800; }   /* 今天：蓝底 */
+    .day-today{ background:#1976d2; color:#fff; font-weight:800; }     /* 今天：蓝底 */
     .day-edited{ background:#fdecea; color:#c62828; font-weight:800; } /* 修改过：红底 */
     .day-recorded{ background:#e8f5e9; color:#2e7d32; font-weight:800; } /* 有记录：绿底 */
-    .day-empty{ background:#ffffff; color:#333; }                    /* 未记录：白底 */
-    .day-pad{ visibility:hidden; }                                   /* 月初占位 */
+    .day-empty{ background:#ffffff; color:#333; }                      /* 未记录：白底 */
+    .day-pad{ visibility:hidden; }                                     /* 月初占位 */
 
     /* 计算器弹窗 */
     .modal-mask{
@@ -120,7 +120,7 @@
     .calc-actions{display:flex; gap:10px; margin-top:10px;}
     .calc-actions .btn-primary{flex:1;}
 
-    /* 手机端：侧边栏变成顶部横向月份条 */
+    /* 手机端 */
     @media (max-width: 820px){
       .wrap{max-width:720px;}
       .layout{flex-direction:column;}
@@ -161,11 +161,9 @@
             只能编辑到今天（不能写未来）。曾被修改过的日期会标红。
           </div>
 
-          <!-- ====== 新增：本月日历视图 ====== -->
           <label>本月日历</label>
           <div id="monthCalendar" aria-label="本月日历"></div>
 
-          <!-- ✅ 文案修改：当天花销总数 -> 今日消费总数 -->
           <label>今日消费总数（CAD）</label>
           <input id="dayInput" type="number" inputmode="decimal" placeholder="例如 35" />
           <div class="sub" id="dayLine" style="margin:6px 0 0;">编辑：—</div>
@@ -422,7 +420,7 @@
     return normalizeRecord(monthData.days[dateStr]);
   }
 
-  // ===== 新增：渲染本月日历（今天蓝 / 修改红 / 有记录绿 / 未记录白） =====
+  // ===== 渲染本月日历（今天蓝 / 修改红 / 有记录绿 / 未记录白） =====
   function renderMonthCalendar(){
     if (!monthCalendar) return;
 
@@ -432,7 +430,6 @@
 
     let html = '';
 
-    // 月初占位
     for (let i = 0; i < firstDay; i++){
       html += `<div class="day-cell day-pad"></div>`;
     }
@@ -442,8 +439,6 @@
       const rec = normalizeRecord(monthData.days[ymd]);
 
       let cls = 'day-empty';
-
-      // 仅当“本月=当前月”时，今天才会出现在本月里
       if (ymd === todayYmd){
         cls = 'day-today';
       } else if (rec.edited){
@@ -463,8 +458,8 @@
       el.addEventListener('click', ()=>{
         const d = el.dataset.date;
         if (!d) return;
-        if (isFutureDate(d)) return;               // 禁止未来
-        switchEditDate(d);                          // 复用你现有切换逻辑（含自动保存）
+        if (isFutureDate(d)) return;
+        switchEditDate(d);
       });
     });
   }
@@ -490,12 +485,12 @@
 
   function renderEditLine(){
     const rec = getDayRecord(editYmd);
-    datePicker.classList.toggle('edited', !!rec.edited);
 
-    const datePart = rec.edited
-      ? `<span style="color:#c62828;font-weight:700;">${editYmd}</span>`
-      : `<span>${editYmd}</span>`;
-    dayLine.innerHTML = `编辑：${datePart}（${weekdayOf(editYmd)}）`;
+    // ✅ 关键：不再让 datePicker 变红（保持黑色）
+    datePicker.classList.remove('edited');
+
+    // ✅ 关键：编辑行永远黑色（不再按 edited 染红）
+    dayLine.textContent = `编辑：${editYmd}（${weekdayOf(editYmd)}）`;
   }
 
   function flushSaveNow(){
@@ -518,7 +513,6 @@
     }
 
     const ym = newYmd.slice(0,7);
-
     if (ym !== activeYm) {
       if (ym > currentYm) {
         alert('未来月份不可编辑。');
@@ -536,8 +530,6 @@
     renderEditLine();
     renderStatsAndList();
     setSaveState('idle');
-
-    // ✅ 同步刷新月历状态（选日、颜色）
     renderMonthCalendar();
   }
 
@@ -606,7 +598,7 @@
     const keys = Object.keys(monthData.days).filter(k => k.startsWith(activeYm+'-')).sort();
     if (!keys.length) {
       monthList.textContent = '（暂无记录）';
-      renderMonthCalendar(); // ✅ 即使没记录，也要把白底日历画出来
+      renderMonthCalendar();
       return;
     }
 
@@ -614,17 +606,19 @@
       const rec = normalizeRecord(monthData.days[k]);
       const money = (typeof rec.total === 'number') ? `${rec.total.toFixed(2)} CAD` : '—';
       const tags = (rec.tags && rec.tags.length) ? rec.tags.join(' / ') : '（无标签）';
+
+      // ✅ 保留列表红色（你没要求改这里）
       const dateHtml = rec.edited
         ? `<span style="color:#c62828;font-weight:700;">${k}</span>`
         : `<span>${k}</span>`;
       const editedBadge = rec.edited ? ` <span style="color:#c62828;">（已改）</span>` : '';
+
       return `<div style="padding:6px 0;border-bottom:1px dashed #eee;">
                 <strong>${dateHtml}</strong>${editedBadge} ｜ ${money}<br/>
                 <span style="color:#666;font-size:13px;">${tags}</span>
               </div>`;
     }).join('');
 
-    // ✅ 每次统计/列表刷新后，同步刷新月历（颜色变化立刻体现）
     renderMonthCalendar();
   }
 
@@ -654,7 +648,6 @@
     if (monthData.undo.day.length > 120) monthData.undo.day.shift();
 
     const nowTs = Date.now();
-
     const isFirstWrite = !existing0 || existing.createdAt === null;
     const edited = isFirstWrite ? false : true;
 
@@ -770,7 +763,6 @@
       datePicker.value = editYmd;
       return;
     }
-
     switchEditDate(picked);
   });
 
@@ -860,8 +852,6 @@
     renderStatsAndList();
     setSaveState('idle');
     buildMonthList();
-
-    // ✅ 切换月份后刷新月历
     renderMonthCalendar();
   }
 
@@ -874,7 +864,7 @@
   const calcExprEl = document.getElementById('calcExpr');
   const calcValEl = document.getElementById('calcVal');
 
-  let calcTarget = null;   // 'plan' | 'day'
+  let calcTarget = null;
   let expr = '';
   let lastValue = null;
 
@@ -960,8 +950,6 @@
     renderEditLine();
     renderStatsAndList();
     setSaveState('idle');
-
-    // ✅ 初次渲染月历
     renderMonthCalendar();
   }
   hydrateUI();
