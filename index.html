@@ -74,6 +74,38 @@
     }
     .currency-hint{font-size:12px;color:#666;margin-top:8px;line-height:1.4;}
 
+    /* ===== 语言选择 ===== */
+    .lang-box{
+      border:1px solid #e6e6e6;border-radius:16px;padding:12px;margin-bottom:12px;background:#fff;
+    }
+    .lang-label{font-size:12px;color:#666;margin-bottom:8px;}
+    .lang-select{
+      width:100%;
+      font-size:16px;
+      font-weight:800;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid #ddd;
+      cursor:pointer;
+      background:#fff;
+      box-sizing:border-box;
+    }
+    .lang-hint{font-size:12px;color:#666;margin-top:8px;line-height:1.4;}
+
+    /* ===== 税务提醒卡片 ===== */
+    .tax-card{
+      border:1px solid #e6e6e6;
+      background:#fff;
+      border-radius:16px;
+      padding:12px;
+      margin:10px 0 12px;
+    }
+    .tax-title{font-weight:900;margin:0 0 6px;}
+    .tax-lines{color:#333;font-size:13px;line-height:1.7;}
+    .tax-note{margin-top:8px;color:#666;font-size:12px;line-height:1.5;}
+    .tax-row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+    .tax-row label{margin:0;font-size:13px;display:flex;align-items:center;gap:6px;}
+
     /* ===== 月份列表 ===== */
     .month-nav{display:flex;flex-direction:column;gap:6px;}
     .month-item{
@@ -237,7 +269,7 @@
       .month-nav{flex-direction:row;overflow:auto;gap:8px;padding-bottom:2px;}
       .month-item{white-space:nowrap;min-width:140px;}
       .legend{border-top:none;padding-top:0;margin-top:8px;}
-      .currency-box,.book-box{margin-bottom:10px;}
+      .currency-box,.book-box,.lang-box{margin-bottom:10px;}
     }
   </style>
 </head>
@@ -248,20 +280,34 @@
 
       <aside class="sidebar">
 
+        <!-- 语言选择 -->
+        <div class="lang-box">
+          <div class="lang-label" data-i18n="lang_label">语言</div>
+          <select id="langSelect" class="lang-select">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="hi">हिन्दी</option>
+          </select>
+          <div class="lang-hint" data-i18n="lang_hint">切换语言仅影响界面文字，不影响你已保存的数据。</div>
+        </div>
+
         <!-- 账本选择（数据隔离核心） -->
         <div class="book-box">
-          <div class="book-label">当前账本</div>
+          <div class="book-label" data-i18n="book_current">当前账本</div>
           <select id="bookSelect" class="book-select"></select>
           <div class="book-actions">
-            <button class="btn" id="bookNewBtn" type="button">新建</button>
-            <button class="btn" id="bookDelBtn" type="button">删除</button>
+            <button class="btn" id="bookNewBtn" type="button" data-i18n="book_new">新建</button>
+            <button class="btn" id="bookDelBtn" type="button" data-i18n="book_delete">删除</button>
           </div>
-          <div class="book-hint">每个账本的数据独立存储，不会互相串联。</div>
+          <div class="book-hint" data-i18n="book_hint">每个账本的数据独立存储，不会互相串联。</div>
         </div>
 
         <!-- 大币种下拉 -->
         <div class="currency-box">
-          <div class="currency-label">当前币种</div>
+          <div class="currency-label" data-i18n="currency_current">当前币种</div>
           <select id="currencySelect" class="currency-select">
             <option value="CAD">CAD</option>
             <option value="USD">USD</option>
@@ -270,100 +316,117 @@
             <option value="JPY">JPY</option>
             <option value="CNY">CNY</option>
           </select>
-          <div class="currency-hint">切换后仅改变显示单位，不做汇率换算。</div>
+          <div class="currency-hint" data-i18n="currency_hint">切换后仅改变显示单位，不做汇率换算。</div>
         </div>
 
-        <div class="side-title">月份</div>
+        <div class="side-title" data-i18n="months_title">月份</div>
         <div class="month-nav" id="monthNav"></div>
 
-        <div class="muted" style="margin-top:10px;">
+        <div class="muted" style="margin-top:10px;" data-i18n="months_tip">
           仅显示“有记录的过往月份”和“当前月”。点击月份可回看/修改该月数据。
         </div>
 
         <div class="legend">
-          <div class="legend-title">颜色说明</div>
-          <div class="legend-item"><span class="legend-swatch sw-green"></span>绿色框 = 已填写</div>
-          <div class="legend-item"><span class="legend-swatch sw-red"></span>红色框 = 有修改</div>
-          <div class="legend-item"><span class="legend-swatch sw-blue"></span>蓝色框 = 今日</div>
-          <div class="legend-item"><span class="legend-swatch sw-white"></span>白色框 = 未填写</div>
+          <div class="legend-title" data-i18n="legend_title">颜色说明</div>
+          <div class="legend-item"><span class="legend-swatch sw-green"></span><span data-i18n="legend_green">绿色框 = 已填写</span></div>
+          <div class="legend-item"><span class="legend-swatch sw-red"></span><span data-i18n="legend_red">红色框 = 有修改</span></div>
+          <div class="legend-item"><span class="legend-swatch sw-blue"></span><span data-i18n="legend_blue">蓝色框 = 今日</span></div>
+          <div class="legend-item"><span class="legend-swatch sw-white"></span><span data-i18n="legend_white">白色框 = 未填写</span></div>
         </div>
       </aside>
 
       <main class="main">
         <div class="card">
-          <h1>轻记账（客观统计）</h1>
-          <p class="sub" id="dateLine">月份：—</p>
+          <h1 data-i18n="app_title">轻记账（客观统计）</h1>
+          <p class="sub" id="dateLine">—</p>
 
-          <label>本月计划花销总数</label>
-          <input id="planInput" type="number" inputmode="decimal" placeholder="例如 1000" />
+          <!-- 税务提醒卡片 -->
+          <section class="tax-card" id="taxReminderCard">
+            <div class="tax-title" data-i18n="tax_title">加拿大报税/补税提醒</div>
+            <div class="tax-lines" id="taxReminderText"></div>
+            <div class="tax-row">
+              <label>
+                <input type="checkbox" id="isSelfEmployedToggle" />
+                <span data-i18n="tax_self_employed">自雇（Self-employed）</span>
+              </label>
+              <label>
+                <input type="checkbox" id="hideTaxReminderToggle" />
+                <span data-i18n="tax_hide_this_year">今年不再提示</span>
+              </label>
+            </div>
+            <div class="tax-note" data-i18n="tax_note">注：这是时间点提醒，不提供报税建议；以 CRA 官方更新为准。</div>
+          </section>
+
+          <label data-i18n="plan_label">本月计划花销总数</label>
+          <input id="planInput" type="number" inputmode="decimal" data-i18n-placeholder="plan_ph" placeholder="例如 1000" />
           <div class="row">
-            <button class="btn btn-mini" id="planEditBtn" type="button">修改（计算器）</button>
-            <button class="btn btn-mini" id="planUndoBtn" type="button">撤销</button>
+            <button class="btn btn-mini" id="planEditBtn" type="button" data-i18n="edit_calc">修改（计算器）</button>
+            <button class="btn btn-mini" id="planUndoBtn" type="button" data-i18n="undo">撤销</button>
           </div>
 
-          <label>编辑日期（回改某一天）</label>
+          <label data-i18n="edit_date_label">编辑日期（回改某一天）</label>
           <input id="datePicker" type="date" />
-          <div class="sub" id="pickerHint" style="margin:6px 0 0;">
+          <div class="sub" id="pickerHint" style="margin:6px 0 0;" data-i18n="picker_hint">
             只能编辑到今天（不能写未来）。修改需点“确认修改”才生效。
           </div>
 
-          <label>本月日历</label>
+          <label data-i18n="month_calendar_label">本月日历</label>
           <div id="monthCalendar" aria-label="本月日历"></div>
 
-          <label>今日消费总数</label>
-          <input id="dayInput" type="number" inputmode="decimal" placeholder="例如 35" />
-          <div class="sub" id="dayLine" style="margin:6px 0 0;">编辑：—</div>
+          <label data-i18n="today_total_label">今日消费总数</label>
+          <input id="dayInput" type="number" inputmode="decimal" data-i18n-placeholder="day_ph" placeholder="例如 35" />
+          <div class="sub" id="dayLine" style="margin:6px 0 0;">—</div>
 
           <div class="row">
-            <button class="btn-confirm" id="confirmBtn" type="button" disabled>确认修改</button>
-            <button class="btn-cancel" id="cancelBtn" type="button">取消修改</button>
-            <button class="btn btn-mini" id="dayEditBtn" type="button">修改（计算器）</button>
-            <button class="btn btn-mini" id="dayUndoBtn" type="button">撤销</button>
+            <button class="btn-confirm" id="confirmBtn" type="button" disabled data-i18n="confirm_edit">确认修改</button>
+            <button class="btn-cancel" id="cancelBtn" type="button" data-i18n="cancel_edit">取消修改</button>
+            <button class="btn btn-mini" id="dayEditBtn" type="button" data-i18n="edit_calc">修改（计算器）</button>
+            <button class="btn btn-mini" id="dayUndoBtn" type="button" data-i18n="undo">撤销</button>
           </div>
 
-          <label>当日花销内容标签（可多选）</label>
-          <div class="chips">
-            <button class="chip" type="button">停车费</button>
-            <button class="chip" type="button">超市购物</button>
-            <button class="chip" type="button">外出吃饭</button>
-            <button class="chip" type="button">礼物</button>
-            <button class="chip" type="button">油费/交通</button>
-            <button class="chip" type="button">生活用品</button>
-            <button class="chip" type="button">账单/订阅</button>
-            <button class="chip" type="button">医疗/药品</button>
-            <button class="chip" type="button">娱乐/休闲</button>
-            <button class="chip" type="button">其他</button>
+          <label data-i18n="tags_label">当日花销内容标签（可多选）</label>
+          <div class="chips" id="tagChips">
+            <button class="chip" type="button" data-tag="parking" data-i18n="tag_parking">停车费</button>
+            <button class="chip" type="button" data-tag="grocery" data-i18n="tag_grocery">超市购物</button>
+            <button class="chip" type="button" data-tag="dining" data-i18n="tag_dining">外出吃饭</button>
+            <button class="chip" type="button" data-tag="gift" data-i18n="tag_gift">礼物</button>
+            <button class="chip" type="button" data-tag="transport" data-i18n="tag_transport">油费/交通</button>
+            <button class="chip" type="button" data-tag="household" data-i18n="tag_household">生活用品</button>
+            <button class="chip" type="button" data-tag="bills" data-i18n="tag_bills">账单/订阅</button>
+            <button class="chip" type="button" data-tag="medical" data-i18n="tag_medical">医疗/药品</button>
+            <button class="chip" type="button" data-tag="entertainment" data-i18n="tag_entertainment">娱乐/休闲</button>
+            <button class="chip" type="button" data-tag="other" data-i18n="tag_other">其他</button>
           </div>
 
           <div class="row" style="margin-top:12px;">
-            <button class="btn btn-primary" id="recordBtn" type="button">保存这天</button>
+            <button class="btn btn-primary" id="recordBtn" type="button" data-i18n="save_day">保存这天</button>
           </div>
 
           <div class="grid">
             <div class="box">
-              <div class="k" id="spentLabel">截至目前已花</div>
+              <div class="k" id="spentLabel">—</div>
               <div class="v" id="spentVal">—</div>
             </div>
             <div class="box">
-              <div class="k">日均实际（S ÷ d）</div>
+              <div class="k" data-i18n="avg_actual">日均实际（S ÷ d）</div>
               <div class="v" id="avgVal">—</div>
             </div>
             <div class="box">
-              <div class="k">本月剩余</div>
+              <div class="k" data-i18n="month_remaining">本月剩余</div>
               <div class="v" id="balanceVal">—</div>
             </div>
             <div class="box">
-              <div class="k" id="needLabel">为不超支：从明天起后续日均需 ≤</div>
+              <div class="k" id="needLabel">—</div>
               <div class="v" id="needVal">—</div>
             </div>
           </div>
 
           <details open>
-            <summary>本月每日列表（红色=曾修改）</summary>
-            <div class="muted" id="monthList">（暂无记录）</div>
+            <summary data-i18n="month_list_title">本月每日列表（红色=曾修改）</summary>
+            <div class="muted" id="monthList" data-i18n="no_records">（暂无记录）</div>
           </details>
 
-          <p class="muted">
+          <p class="muted" data-i18n="footer_note">
             说明：切换币种只改变显示单位，不做汇率换算。每个账本独立存储。输入框改动不会立刻写入；只有产生修改行为时，“确认修改”才会变为可点击。
           </p>
         </div>
@@ -375,14 +438,14 @@
   <!-- 账本名称引导（首次/新建时） -->
   <div class="gate-mask" id="gateMask" aria-hidden="true">
     <div class="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
-      <h2 id="gateTitle">请输入账本名称</h2>
-      <p>例如：a / 家庭 / Yang / 2025。每个账本的数据完全独立，不会互相串联。</p>
-      <input id="gateInput" placeholder="账本名称（必填）" />
+      <h2 id="gateTitle" data-i18n="gate_title">请输入账本名称</h2>
+      <p data-i18n="gate_desc">例如：a / 家庭 / Yang / 2025。每个账本的数据完全独立，不会互相串联。</p>
+      <input id="gateInput" data-i18n-placeholder="gate_ph" placeholder="账本名称（必填）" />
       <div class="row">
-        <button class="btn btn-primary" id="gateOkBtn" type="button">进入</button>
-        <button class="btn" id="gateCancelBtn" type="button">取消</button>
+        <button class="btn btn-primary" id="gateOkBtn" type="button" data-i18n="gate_enter">进入</button>
+        <button class="btn" id="gateCancelBtn" type="button" data-i18n="gate_cancel">取消</button>
       </div>
-      <small>提示：账本名称仅存本地，不联网。如果你和别人共用同一台电脑同一浏览器，记得用不同账本名称。</small>
+      <small data-i18n="gate_tip">提示：账本名称仅存本地，不联网。如果你和别人共用同一台电脑同一浏览器，记得用不同账本名称。</small>
     </div>
   </div>
 
@@ -390,8 +453,8 @@
   <div class="modal-mask" id="calcMask" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
       <div class="modal-hd">
-        <div class="modal-title" id="calcTitle">计算器修改</div>
-        <button class="modal-close" id="calcClose" type="button">关闭</button>
+        <div class="modal-title" id="calcTitle" data-i18n="calc_title">计算器修改</div>
+        <button class="modal-close" id="calcClose" type="button" data-i18n="close">关闭</button>
       </div>
 
       <div class="calc-screen">
@@ -400,8 +463,8 @@
       </div>
 
       <div class="calc-grid">
-        <button class="calc-btn warn" data-k="C" type="button">清零</button>
-        <button class="calc-btn warn" data-k="BS" type="button">退格</button>
+        <button class="calc-btn warn" data-k="C" type="button" data-i18n="calc_clear">清零</button>
+        <button class="calc-btn warn" data-k="BS" type="button" data-i18n="calc_back">退格</button>
         <button class="calc-btn op" data-k="/" type="button">÷</button>
         <button class="calc-btn op" data-k="*" type="button">×</button>
 
@@ -423,17 +486,743 @@
         <button class="calc-btn" data-k="0" type="button">0</button>
         <button class="calc-btn" data-k="00" type="button">00</button>
         <button class="calc-btn op" data-k="=" type="button">=</button>
-        <button class="calc-btn op" id="calcOk" type="button">确认</button>
+        <button class="calc-btn op" id="calcOk" type="button" data-i18n="confirm">确认</button>
       </div>
 
       <div class="calc-actions">
-        <button class="btn" id="calcCancel" type="button">取消</button>
-        <button class="btn btn-primary" id="calcUse" type="button">把结果写回</button>
+        <button class="btn" id="calcCancel" type="button" data-i18n="cancel">取消</button>
+        <button class="btn btn-primary" id="calcUse" type="button" data-i18n="write_back">把结果写回</button>
       </div>
     </div>
   </div>
 
   <script>
+  /***********************
+   * i18n
+   ***********************/
+  const I18N = {
+    zh: {
+      lang_label: "语言",
+      lang_hint: "切换语言仅影响界面文字，不影响你已保存的数据。",
+
+      book_current: "当前账本",
+      book_new: "新建",
+      book_delete: "删除",
+      book_hint: "每个账本的数据独立存储，不会互相串联。",
+
+      currency_current: "当前币种",
+      currency_hint: "切换后仅改变显示单位，不做汇率换算。",
+
+      months_title: "月份",
+      months_tip: "仅显示“有记录的过往月份”和“当前月”。点击月份可回看/修改该月数据。",
+
+      legend_title: "颜色说明",
+      legend_green: "绿色框 = 已填写",
+      legend_red: "红色框 = 有修改",
+      legend_blue: "蓝色框 = 今日",
+      legend_white: "白色框 = 未填写",
+
+      app_title: "轻记账（客观统计）",
+
+      tax_title: "加拿大报税/补税提醒",
+      tax_self_employed: "自雇（Self-employed）",
+      tax_hide_this_year: "今年不再提示",
+      tax_note: "注：这是时间点提醒，不提供报税建议；以 CRA 官方更新为准。",
+      tax_line_1: "• 报税季通常：2 月下旬起可电子报税（NETFILE）。",
+      tax_line_2: "• 普通个人：{apr30} 前完成报税；如需补税，{apr30} 前交清。",
+      tax_line_3: "• 自雇人士：报税截止 {jun15}，但若需要补税仍是 {apr30} 前交清。",
+      tax_line_4: "• 报税后留意 CRA 的 Notice of Assessment（评税通知）。",
+
+      plan_label: "本月计划花销总数",
+      plan_ph: "例如 1000",
+      edit_calc: "修改（计算器）",
+      undo: "撤销",
+
+      edit_date_label: "编辑日期（回改某一天）",
+      picker_hint: "只能编辑到今天（不能写未来）。修改需点“确认修改”才生效。",
+
+      month_calendar_label: "本月日历",
+
+      today_total_label: "今日消费总数",
+      day_ph: "例如 35",
+
+      confirm_edit: "确认修改",
+      cancel_edit: "取消修改",
+
+      tags_label: "当日花销内容标签（可多选）",
+
+      tag_parking: "停车费",
+      tag_grocery: "超市购物",
+      tag_dining: "外出吃饭",
+      tag_gift: "礼物",
+      tag_transport: "油费/交通",
+      tag_household: "生活用品",
+      tag_bills: "账单/订阅",
+      tag_medical: "医疗/药品",
+      tag_entertainment: "娱乐/休闲",
+      tag_other: "其他",
+
+      save_day: "保存这天",
+      saved: "已保存",
+
+      avg_actual: "日均实际（S ÷ d）",
+      month_remaining: "本月剩余",
+
+      month_list_title: "本月每日列表（红色=曾修改）",
+      no_records: "（暂无记录）",
+
+      footer_note: "说明：切换币种只改变显示单位，不做汇率换算。每个账本独立存储。输入框改动不会立刻写入；只有产生修改行为时，“确认修改”才会变为可点击。",
+
+      gate_title: "请输入账本名称",
+      gate_desc: "例如：a / 家庭 / Yang / 2025。每个账本的数据完全独立，不会互相串联。",
+      gate_ph: "账本名称（必填）",
+      gate_enter: "进入",
+      gate_cancel: "取消",
+      gate_tip: "提示：账本名称仅存本地，不联网。如果你和别人共用同一台电脑同一浏览器，记得用不同账本名称。",
+
+      calc_title: "计算器修改",
+      close: "关闭",
+      calc_clear: "清零",
+      calc_back: "退格",
+      confirm: "确认",
+      cancel: "取消",
+      write_back: "把结果写回",
+
+      month_prefix: "月份：{ym}",
+      spent_until: "截至目前已花",
+      spent_month: "本月已花",
+      need_today: "为不超支：从明天起后续日均需 ≤",
+      need_ended: "该月已结束",
+      edit_prefix: "编辑：{ymd}（{wk}）",
+
+      cannot_future: "不能填写未来日期（例如明天）。",
+      cannot_future_month: "未来月份不可编辑。",
+      confirm_delete_book: "确定删除账本「{name}」吗？\n删除后该账本的本地数据将被移除，无法恢复。",
+      input_book_name: "请输入账本名称",
+      must_create_book: "请先创建一个账本名称",
+      expr_invalid: "表达式无效",
+      expr_invalid_alert: "表达式无效，请修改后再确认",
+      cannot_future_short: "不能填写未来日期。"
+    },
+
+    en: {
+      lang_label: "Language",
+      lang_hint: "Language changes UI text only; your saved data stays the same.",
+
+      book_current: "Current book",
+      book_new: "New",
+      book_delete: "Delete",
+      book_hint: "Each book is stored separately; data will not mix.",
+
+      currency_current: "Currency",
+      currency_hint: "Changes display only (no FX conversion).",
+
+      months_title: "Months",
+      months_tip: "Shows months with records and the current month. Click to view/edit.",
+
+      legend_title: "Legend",
+      legend_green: "Green = filled",
+      legend_red: "Red = edited",
+      legend_blue: "Blue = today",
+      legend_white: "White = empty",
+
+      app_title: "Budget Tool (Simple Stats)",
+
+      tax_title: "Canada Tax Filing / Payment Reminder",
+      tax_self_employed: "Self-employed",
+      tax_hide_this_year: "Hide for this year",
+      tax_note: "Note: Deadline reminder only. Please follow CRA updates.",
+      tax_line_1: "• Tax season typically starts in late Feb (NETFILE).",
+      tax_line_2: "• Individuals: file by {apr30}; if you owe, pay by {apr30}.",
+      tax_line_3: "• Self-employed: filing due {jun15}, but payment (if owing) is still due {apr30}.",
+      tax_line_4: "• After filing, check your CRA Notice of Assessment.",
+
+      plan_label: "Monthly budget plan",
+      plan_ph: "e.g., 1000",
+      edit_calc: "Edit (Calculator)",
+      undo: "Undo",
+
+      edit_date_label: "Edit date (backfill)",
+      picker_hint: "You can only edit up to today (no future dates). Changes take effect after “Confirm”.",
+
+      month_calendar_label: "Month calendar",
+
+      today_total_label: "Daily spending",
+      day_ph: "e.g., 35",
+
+      confirm_edit: "Confirm",
+      cancel_edit: "Cancel",
+
+      tags_label: "Tags (multi-select)",
+
+      tag_parking: "Parking",
+      tag_grocery: "Groceries",
+      tag_dining: "Dining out",
+      tag_gift: "Gifts",
+      tag_transport: "Gas/Transport",
+      tag_household: "Household",
+      tag_bills: "Bills/Subscriptions",
+      tag_medical: "Medical",
+      tag_entertainment: "Leisure",
+      tag_other: "Other",
+
+      save_day: "Save day",
+      saved: "Saved",
+
+      avg_actual: "Daily avg (S ÷ d)",
+      month_remaining: "Remaining",
+
+      month_list_title: "Daily list (red = edited)",
+      no_records: "(No records)",
+
+      footer_note: "Note: Currency changes display only (no FX conversion). Each book is stored separately. Inputs don’t write immediately; “Confirm” becomes clickable only after changes.",
+
+      gate_title: "Enter a book name",
+      gate_desc: "Examples: a / Family / Yang / 2025. Each book is fully isolated.",
+      gate_ph: "Book name (required)",
+      gate_enter: "Enter",
+      gate_cancel: "Cancel",
+      gate_tip: "Tip: Book name is stored locally (no internet). If sharing a device/browser, use different book names.",
+
+      calc_title: "Calculator",
+      close: "Close",
+      calc_clear: "Clear",
+      calc_back: "Backspace",
+      confirm: "OK",
+      cancel: "Cancel",
+      write_back: "Write back",
+
+      month_prefix: "Month: {ym}",
+      spent_until: "Spent so far",
+      spent_month: "Spent in month",
+      need_today: "To avoid overspending: required daily avg from tomorrow ≤",
+      need_ended: "Month ended",
+      edit_prefix: "Editing: {ymd} ({wk})",
+
+      cannot_future: "You cannot enter future dates (e.g., tomorrow).",
+      cannot_future_month: "Future months cannot be edited.",
+      confirm_delete_book: "Delete book “{name}”?\nLocal data will be removed and cannot be recovered.",
+      input_book_name: "Please enter a book name.",
+      must_create_book: "Please create a book name first.",
+      expr_invalid: "Invalid expression",
+      expr_invalid_alert: "Invalid expression. Please fix it before confirming.",
+      cannot_future_short: "Future dates are not allowed."
+    },
+
+    ja: {
+      lang_label: "言語",
+      lang_hint: "言語は表示だけ変更します。保存データはそのままです。",
+
+      book_current: "現在の帳簿",
+      book_new: "新規",
+      book_delete: "削除",
+      book_hint: "帳簿ごとにデータは独立し、混ざりません。",
+
+      currency_current: "通貨",
+      currency_hint: "表示単位のみ変更（為替換算なし）。",
+
+      months_title: "月",
+      months_tip: "記録がある過去月と当月のみ表示。クリックで閲覧/編集。",
+
+      legend_title: "凡例",
+      legend_green: "緑＝入力済み",
+      legend_red: "赤＝修正あり",
+      legend_blue: "青＝今日",
+      legend_white: "白＝未入力",
+
+      app_title: "簡単家計簿（統計）",
+
+      tax_title: "カナダ 確定申告／納税リマインダー",
+      tax_self_employed: "自営業（Self-employed）",
+      tax_hide_this_year: "今年は表示しない",
+      tax_note: "注：期限のリマインドのみ。最新情報はCRAをご確認ください。",
+      tax_line_1: "• 申告シーズン：通常 2月下旬 から電子申告可能（NETFILE）。",
+      tax_line_2: "• 一般：{apr30} までに申告。追加納税も {apr30} まで。",
+      tax_line_3: "• 自営業：申告期限 {jun15}、ただし納税（追加納税がある場合）は {apr30} まで。",
+      tax_line_4: "• 申告後、CRA の Notice of Assessment を確認。",
+
+      plan_label: "今月の予算（計画）",
+      plan_ph: "例：1000",
+      edit_calc: "計算機で修正",
+      undo: "元に戻す",
+
+      edit_date_label: "日付を編集（過去入力）",
+      picker_hint: "今日まで編集可能（未来不可）。反映には「確定」が必要。",
+      month_calendar_label: "今月カレンダー",
+
+      today_total_label: "当日の支出",
+      day_ph: "例：35",
+
+      confirm_edit: "確定",
+      cancel_edit: "キャンセル",
+
+      tags_label: "タグ（複数選択可）",
+      tag_parking: "駐車",
+      tag_grocery: "スーパー",
+      tag_dining: "外食",
+      tag_gift: "ギフト",
+      tag_transport: "交通/ガス",
+      tag_household: "日用品",
+      tag_bills: "請求/サブスク",
+      tag_medical: "医療",
+      tag_entertainment: "娯楽",
+      tag_other: "その他",
+
+      save_day: "保存",
+      saved: "保存済み",
+
+      avg_actual: "日平均（S ÷ d）",
+      month_remaining: "残り",
+
+      month_list_title: "日別一覧（赤＝修正）",
+      no_records: "（記録なし）",
+
+      footer_note: "注：通貨は表示のみ変更（換算なし）。帳簿は独立保存。入力は即保存されず、変更後に「確定」で反映。",
+
+      gate_title: "帳簿名を入力",
+      gate_desc: "例：a / 家族 / Yang / 2025。帳簿ごとに完全に独立します。",
+      gate_ph: "帳簿名（必須）",
+      gate_enter: "入る",
+      gate_cancel: "キャンセル",
+      gate_tip: "ヒント：帳簿名はローカル保存（ネットなし）。共有PC/ブラウザでは別名を使ってください。",
+
+      calc_title: "計算機",
+      close: "閉じる",
+      calc_clear: "クリア",
+      calc_back: "戻す",
+      confirm: "確定",
+      cancel: "キャンセル",
+      write_back: "反映する",
+
+      month_prefix: "月：{ym}",
+      spent_until: "現在までの支出",
+      spent_month: "月の支出",
+      need_today: "超過しないため：明日以降の必要日平均 ≤",
+      need_ended: "月は終了",
+      edit_prefix: "編集中：{ymd}（{wk}）",
+
+      cannot_future: "未来日は入力できません（例：明日）。",
+      cannot_future_month: "未来の月は編集できません。",
+      confirm_delete_book: "帳簿「{name}」を削除しますか？\nローカルデータは削除され復元できません。",
+      input_book_name: "帳簿名を入力してください。",
+      must_create_book: "先に帳簿名を作成してください。",
+      expr_invalid: "式が無効です",
+      expr_invalid_alert: "式が無効です。修正してから確定してください。",
+      cannot_future_short: "未来日は入力できません。"
+    },
+
+    ko: {
+      lang_label: "언어",
+      lang_hint: "언어는 화면 문구만 변경하며, 저장된 데이터는 그대로입니다.",
+
+      book_current: "현재 장부",
+      book_new: "새로 만들기",
+      book_delete: "삭제",
+      book_hint: "장부별로 데이터가 분리되어 서로 섞이지 않습니다.",
+
+      currency_current: "통화",
+      currency_hint: "표시 단위만 변경(환율 변환 없음).",
+
+      months_title: "월",
+      months_tip: "기록이 있는 과거 월과 현재 월만 표시됩니다. 클릭하여 보기/수정.",
+
+      legend_title: "색상 설명",
+      legend_green: "초록 = 입력됨",
+      legend_red: "빨강 = 수정됨",
+      legend_blue: "파랑 = 오늘",
+      legend_white: "흰색 = 비어 있음",
+
+      app_title: "간단 가계부(통계)",
+
+      tax_title: "캐나다 세금 신고/납부 알림",
+      tax_self_employed: "자영업(Self-employed)",
+      tax_hide_this_year: "올해는 숨기기",
+      tax_note: "참고: 기한 알림용입니다. 최신 정보는 CRA 공지를 확인하세요.",
+      tax_line_1: "• 신고 시즌: 보통 2월 하순부터 전자 신고(NETFILE) 가능.",
+      tax_line_2: "• 개인: {apr30}까지 신고, 추가 납부가 있으면 {apr30}까지 납부.",
+      tax_line_3: "• 자영업: 신고 마감 {jun15}, 단 추가 납부가 있으면 {apr30}까지 납부.",
+      tax_line_4: "• 신고 후 CRA Notice of Assessment를 확인하세요.",
+
+      plan_label: "이번 달 예산(계획)",
+      plan_ph: "예: 1000",
+      edit_calc: "수정(계산기)",
+      undo: "되돌리기",
+
+      edit_date_label: "날짜 편집(과거 수정)",
+      picker_hint: "오늘까지 편집 가능(미래 불가). '확인'을 눌러야 반영됩니다.",
+      month_calendar_label: "월간 달력",
+
+      today_total_label: "오늘 지출",
+      day_ph: "예: 35",
+
+      confirm_edit: "확인",
+      cancel_edit: "취소",
+
+      tags_label: "태그(복수 선택)",
+      tag_parking: "주차",
+      tag_grocery: "마트",
+      tag_dining: "외식",
+      tag_gift: "선물",
+      tag_transport: "교통/주유",
+      tag_household: "생활용품",
+      tag_bills: "청구/구독",
+      tag_medical: "의료",
+      tag_entertainment: "여가",
+      tag_other: "기타",
+
+      save_day: "저장",
+      saved: "저장됨",
+
+      avg_actual: "일평균(S ÷ d)",
+      month_remaining: "남은 금액",
+
+      month_list_title: "일별 목록(빨강=수정)",
+      no_records: "(기록 없음)",
+
+      footer_note: "참고: 통화는 표시만 변경(환율 변환 없음). 장부는 분리 저장. 입력은 즉시 저장되지 않으며 변경 후 '확인' 시 반영됩니다.",
+
+      gate_title: "장부 이름 입력",
+      gate_desc: "예: a / 가족 / Yang / 2025. 장부별 데이터는 완전히 분리됩니다.",
+      gate_ph: "장부 이름(필수)",
+      gate_enter: "입장",
+      gate_cancel: "취소",
+      gate_tip: "팁: 장부 이름은 로컬 저장(인터넷 없음). 같은 PC/브라우저 공유 시 다른 이름을 사용하세요.",
+
+      calc_title: "계산기",
+      close: "닫기",
+      calc_clear: "초기화",
+      calc_back: "지우기",
+      confirm: "확인",
+      cancel: "취소",
+      write_back: "값 반영",
+
+      month_prefix: "월: {ym}",
+      spent_until: "현재까지 지출",
+      spent_month: "월 지출",
+      need_today: "초과 방지: 내일부터 필요한 일평균 ≤",
+      need_ended: "월 종료",
+      edit_prefix: "편집: {ymd}({wk})",
+
+      cannot_future: "미래 날짜는 입력할 수 없습니다(예: 내일).",
+      cannot_future_month: "미래 월은 편집할 수 없습니다.",
+      confirm_delete_book: "장부 “{name}”을(를) 삭제할까요?\n로컬 데이터는 삭제되며 복구할 수 없습니다.",
+      input_book_name: "장부 이름을 입력하세요.",
+      must_create_book: "먼저 장부 이름을 만들어 주세요.",
+      expr_invalid: "식이 올바르지 않습니다",
+      expr_invalid_alert: "식이 올바르지 않습니다. 수정 후 확인하세요.",
+      cannot_future_short: "미래 날짜는 불가합니다."
+    },
+
+    vi: {
+      lang_label: "Ngôn ngữ",
+      lang_hint: "Đổi ngôn ngữ chỉ thay đổi chữ hiển thị; dữ liệu đã lưu không đổi.",
+
+      book_current: "Sổ hiện tại",
+      book_new: "Tạo mới",
+      book_delete: "Xóa",
+      book_hint: "Mỗi sổ lưu riêng, dữ liệu không bị lẫn.",
+
+      currency_current: "Tiền tệ",
+      currency_hint: "Chỉ đổi hiển thị (không quy đổi tỷ giá).",
+
+      months_title: "Tháng",
+      months_tip: "Chỉ hiển thị các tháng có dữ liệu và tháng hiện tại. Bấm để xem/sửa.",
+
+      legend_title: "Chú giải",
+      legend_green: "Xanh = đã nhập",
+      legend_red: "Đỏ = đã sửa",
+      legend_blue: "Xanh dương = hôm nay",
+      legend_white: "Trắng = chưa nhập",
+
+      app_title: "Ghi chép chi tiêu (thống kê)",
+
+      tax_title: "Nhắc hạn khai/đóng thuế Canada",
+      tax_self_employed: "Tự doanh (Self-employed)",
+      tax_hide_this_year: "Ẩn trong năm nay",
+      tax_note: "Lưu ý: Chỉ nhắc hạn. Vui lòng theo thông báo CRA.",
+      tax_line_1: "• Mùa khai thuế: thường từ cuối tháng 2 (NETFILE).",
+      tax_line_2: "• Cá nhân: khai trước {apr30}; nếu phải đóng thêm, trả trước {apr30}.",
+      tax_line_3: "• Tự doanh: hạn khai {jun15}, nhưng hạn đóng (nếu nợ) vẫn là {apr30}.",
+      tax_line_4: "• Sau khi khai, kiểm tra Notice of Assessment của CRA.",
+
+      plan_label: "Kế hoạch chi tiêu tháng",
+      plan_ph: "VD: 1000",
+      edit_calc: "Sửa (Máy tính)",
+      undo: "Hoàn tác",
+
+      edit_date_label: "Chọn ngày để sửa",
+      picker_hint: "Chỉ sửa đến hôm nay (không cho ngày tương lai). Bấm “Xác nhận” để áp dụng.",
+      month_calendar_label: "Lịch tháng",
+
+      today_total_label: "Tổng chi hôm nay",
+      day_ph: "VD: 35",
+
+      confirm_edit: "Xác nhận",
+      cancel_edit: "Hủy",
+
+      tags_label: "Nhãn (chọn nhiều)",
+      tag_parking: "Đỗ xe",
+      tag_grocery: "Siêu thị",
+      tag_dining: "Ăn ngoài",
+      tag_gift: "Quà",
+      tag_transport: "Đi lại/Xăng",
+      tag_household: "Đồ dùng",
+      tag_bills: "Hóa đơn/ĐK",
+      tag_medical: "Y tế",
+      tag_entertainment: "Giải trí",
+      tag_other: "Khác",
+
+      save_day: "Lưu ngày",
+      saved: "Đã lưu",
+
+      avg_actual: "TB/ngày (S ÷ d)",
+      month_remaining: "Còn lại",
+
+      month_list_title: "Danh sách theo ngày (đỏ = đã sửa)",
+      no_records: "(Chưa có dữ liệu)",
+
+      footer_note: "Ghi chú: Tiền tệ chỉ đổi hiển thị (không quy đổi). Mỗi sổ lưu riêng. Dữ liệu chỉ áp dụng khi bấm “Xác nhận” sau khi thay đổi.",
+
+      gate_title: "Nhập tên sổ",
+      gate_desc: "VD: a / Gia đình / Yang / 2025. Mỗi sổ tách biệt hoàn toàn.",
+      gate_ph: "Tên sổ (bắt buộc)",
+      gate_enter: "Vào",
+      gate_cancel: "Hủy",
+      gate_tip: "Mẹo: Tên sổ lưu cục bộ (không internet). Nếu dùng chung máy/trình duyệt, hãy dùng tên khác nhau.",
+
+      calc_title: "Máy tính",
+      close: "Đóng",
+      calc_clear: "Xóa hết",
+      calc_back: "Xóa",
+      confirm: "OK",
+      cancel: "Hủy",
+      write_back: "Ghi kết quả",
+
+      month_prefix: "Tháng: {ym}",
+      spent_until: "Đã chi đến nay",
+      spent_month: "Đã chi trong tháng",
+      need_today: "Để không vượt: TB/ngày cần từ mai ≤",
+      need_ended: "Tháng đã kết thúc",
+      edit_prefix: "Đang sửa: {ymd} ({wk})",
+
+      cannot_future: "Không thể nhập ngày tương lai (vd: ngày mai).",
+      cannot_future_month: "Không thể sửa tháng tương lai.",
+      confirm_delete_book: "Xóa sổ “{name}”?\nDữ liệu cục bộ sẽ bị xóa và không thể khôi phục.",
+      input_book_name: "Vui lòng nhập tên sổ.",
+      must_create_book: "Vui lòng tạo tên sổ trước.",
+      expr_invalid: "Biểu thức không hợp lệ",
+      expr_invalid_alert: "Biểu thức không hợp lệ. Hãy sửa trước khi xác nhận.",
+      cannot_future_short: "Không cho ngày tương lai."
+    },
+
+    hi: {
+      lang_label: "भाषा",
+      lang_hint: "भाषा बदलने से केवल UI टेक्स्ट बदलेगा; आपका सेव किया हुआ डेटा वही रहेगा।",
+
+      book_current: "वर्तमान बुक",
+      book_new: "नया",
+      book_delete: "हटाएँ",
+      book_hint: "हर बुक का डेटा अलग रहता है; आपस में नहीं मिलता।",
+
+      currency_current: "मुद्रा",
+      currency_hint: "केवल डिस्प्ले बदलेगा (FX कन्वर्ज़न नहीं)।",
+
+      months_title: "महीने",
+      months_tip: "रिकॉर्ड वाले पुराने महीने और वर्तमान महीना दिखता है। क्लिक करके देखें/एडिट करें।",
+
+      legend_title: "लीजेंड",
+      legend_green: "हरा = भरा हुआ",
+      legend_red: "लाल = एडिट किया",
+      legend_blue: "नीला = आज",
+      legend_white: "सफेद = खाली",
+
+      app_title: "सरल बजट (स्टैट्स)",
+
+      tax_title: "कनाडा टैक्स फाइलिंग/पेमेंट रिमाइंडर",
+      tax_self_employed: "स्व-रोज़गार (Self-employed)",
+      tax_hide_this_year: "इस साल न दिखाएँ",
+      tax_note: "नोट: यह केवल डेडलाइन रिमाइंडर है। CRA अपडेट देखें।",
+      tax_line_1: "• टैक्स सीज़न: आमतौर पर फरवरी के अंत से (NETFILE)।",
+      tax_line_2: "• Individuals: {apr30} तक फाइल करें; अगर बकाया है तो {apr30} तक भुगतान करें।",
+      tax_line_3: "• Self-employed: फाइलिंग {jun15}, लेकिन भुगतान (अगर बकाया) {apr30} तक।",
+      tax_line_4: "• फाइल करने के बाद CRA Notice of Assessment देखें।",
+
+      plan_label: "मासिक बजट योजना",
+      plan_ph: "उदा: 1000",
+      edit_calc: "एडिट (कैलकुलेटर)",
+      undo: "Undo",
+
+      edit_date_label: "तारीख एडिट करें",
+      picker_hint: "आज तक एडिट कर सकते हैं (भविष्य नहीं)। लागू करने के लिए “Confirm” दबाएँ।",
+      month_calendar_label: "महीने का कैलेंडर",
+
+      today_total_label: "आज का खर्च",
+      day_ph: "उदा: 35",
+
+      confirm_edit: "Confirm",
+      cancel_edit: "Cancel",
+
+      tags_label: "टैग (multi-select)",
+      tag_parking: "पार्किंग",
+      tag_grocery: "ग्रॉसरी",
+      tag_dining: "डाइनिंग",
+      tag_gift: "गिफ्ट",
+      tag_transport: "ट्रांसपोर्ट",
+      tag_household: "घरेलू",
+      tag_bills: "बिल/सब्सक्रिप्शन",
+      tag_medical: "मेडिकल",
+      tag_entertainment: "मनोरंजन",
+      tag_other: "अन्य",
+
+      save_day: "Save",
+      saved: "Saved",
+
+      avg_actual: "Daily avg (S ÷ d)",
+      month_remaining: "Remaining",
+
+      month_list_title: "Daily list (red = edited)",
+      no_records: "(No records)",
+
+      footer_note: "Note: मुद्रा केवल डिस्प्ले बदलती है (FX नहीं)। हर बुक अलग रहती है। बदलाव के बाद “Confirm” से लागू होता है।",
+
+      gate_title: "बुक नाम दर्ज करें",
+      gate_desc: "उदा: a / Family / Yang / 2025. हर बुक अलग है।",
+      gate_ph: "बुक नाम (ज़रूरी)",
+      gate_enter: "Enter",
+      gate_cancel: "Cancel",
+      gate_tip: "टिप: बुक नाम लोकल में सेव होता है (इंटरनेट नहीं)। साझा डिवाइस पर अलग नाम रखें।",
+
+      calc_title: "Calculator",
+      close: "Close",
+      calc_clear: "Clear",
+      calc_back: "Backspace",
+      confirm: "OK",
+      cancel: "Cancel",
+      write_back: "Write back",
+
+      month_prefix: "Month: {ym}",
+      spent_until: "Spent so far",
+      spent_month: "Spent in month",
+      need_today: "To avoid overspending: required daily avg from tomorrow ≤",
+      need_ended: "Month ended",
+      edit_prefix: "Editing: {ymd} ({wk})",
+
+      cannot_future: "भविष्य की तारीखें अनुमति नहीं हैं (जैसे कल)।",
+      cannot_future_month: "भविष्य के महीने एडिट नहीं कर सकते।",
+      confirm_delete_book: "बुक “{name}” हटाएँ?\nलोकल डेटा हट जाएगा और वापस नहीं आएगा।",
+      input_book_name: "कृपया बुक नाम दर्ज करें।",
+      must_create_book: "पहले बुक नाम बनाइए।",
+      expr_invalid: "Invalid expression",
+      expr_invalid_alert: "Invalid expression. Please fix it before confirming.",
+      cannot_future_short: "भविष्य की तारीखें नहीं।"
+    }
+  };
+
+  function getSavedLang(){ return localStorage.getItem("budgetTool_lang") || "zh"; }
+  function setSavedLang(lang){ localStorage.setItem("budgetTool_lang", lang); }
+  function t(key, vars = {}){
+    const lang = getSavedLang();
+    const dict = I18N[lang] || I18N.zh;
+    let s = (dict[key] ?? I18N.zh[key] ?? key);
+    for (const [k, v] of Object.entries(vars)) {
+      s = s.replaceAll(`{${k}}`, String(v));
+    }
+    return s;
+  }
+  function applyI18n(){
+    document.documentElement.lang = getSavedLang();
+
+    document.querySelectorAll("[data-i18n]").forEach(el=>{
+      const key = el.getAttribute("data-i18n");
+      el.textContent = t(key);
+    });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el=>{
+      const key = el.getAttribute("data-i18n-placeholder");
+      el.setAttribute("placeholder", t(key));
+    });
+
+    // 动态文字也刷新
+    renderTopLines();
+    renderEditLine();
+    renderTaxReminder();
+  }
+  function initI18n(){
+    const sel = document.getElementById("langSelect");
+    if (!sel) return;
+    sel.value = getSavedLang();
+    sel.addEventListener("change", ()=>{
+      setSavedLang(sel.value);
+      applyI18n();
+      // month list 和 chips 需要重新渲染
+      renderStatsAndList();
+      renderMonthCalendar();
+      buildMonthList();
+    });
+    applyI18n();
+  }
+
+  /***********************
+   * Tax Reminder
+   ***********************/
+  function taxYearKey(){
+    const y = new Date().getFullYear();
+    return `budgetTool_tax_hide_${y}`;
+  }
+  function isTaxHiddenForYear(){ return localStorage.getItem(taxYearKey()) === "1"; }
+  function setTaxHiddenForYear(v){ localStorage.setItem(taxYearKey(), v ? "1" : "0"); }
+  function ymdOf(month, day){
+    const y = new Date().getFullYear();
+    const mm = String(month).padStart(2,"0");
+    const dd = String(day).padStart(2,"0");
+    return `${y}-${mm}-${dd}`;
+  }
+  function renderTaxReminder(){
+    const card = document.getElementById("taxReminderCard");
+    const text = document.getElementById("taxReminderText");
+    const selfToggle = document.getElementById("isSelfEmployedToggle");
+    const hideToggle = document.getElementById("hideTaxReminderToggle");
+    if (!card || !text || !selfToggle || !hideToggle) return;
+
+    // hide for this year
+    const hidden = isTaxHiddenForYear();
+    hideToggle.checked = hidden;
+    card.style.display = hidden ? "none" : "block";
+    if (hidden) return;
+
+    const apr30 = ymdOf(4,30);
+    const jun15 = ymdOf(6,15);
+
+    const lines = [
+      t("tax_line_1"),
+      t("tax_line_2", { apr30 }),
+      t("tax_line_3", { jun15, apr30 }),
+      t("tax_line_4")
+    ];
+
+    const isSE = !!selfToggle.checked;
+    text.innerHTML = `
+      <div>${lines[0]}</div>
+      <div>${lines[1]}</div>
+      <div style="${isSE ? "font-weight:900;" : ""}">${lines[2]}</div>
+      <div>${lines[3]}</div>
+    `;
+  }
+  function initTaxReminder(){
+    const selfToggle = document.getElementById("isSelfEmployedToggle");
+    const hideToggle = document.getElementById("hideTaxReminderToggle");
+    const card = document.getElementById("taxReminderCard");
+    if (!selfToggle || !hideToggle || !card) return;
+
+    selfToggle.addEventListener("change", renderTaxReminder);
+    hideToggle.addEventListener("change", ()=>{
+      setTaxHiddenForYear(hideToggle.checked);
+      renderTaxReminder();
+      if (hideToggle.checked) card.style.display = "none";
+    });
+
+    renderTaxReminder();
+  }
+
   /***********************
    * 账本（用户）隔离层
    ***********************/
@@ -454,7 +1243,6 @@
   }
   function normalizeBookName(name){
     const n = String(name || '').trim();
-    // 禁止空，限制长度，剔除分隔符（避免 key 混乱）
     const cleaned = n.replace(/[:]/g, ' ').replace(/\s+/g,' ').trim();
     if (!cleaned) return '';
     return cleaned.slice(0, 24);
@@ -489,9 +1277,57 @@
     if (!meta.books.includes(bn)) meta.books.push(bn);
     meta.currentBook = bn;
     saveMeta(meta);
-    // 确保存在
     loadBookData(bn);
     return bn;
+  }
+
+  /***********************
+   * Tags (store stable keys, display translated labels)
+   ***********************/
+  const TAG_KEYS = [
+    "parking","grocery","dining","gift","transport","household","bills","medical","entertainment","other"
+  ];
+  const TAG_LABEL_KEY = {
+    parking: "tag_parking",
+    grocery: "tag_grocery",
+    dining: "tag_dining",
+    gift: "tag_gift",
+    transport: "tag_transport",
+    household: "tag_household",
+    bills: "tag_bills",
+    medical: "tag_medical",
+    entertainment: "tag_entertainment",
+    other: "tag_other"
+  };
+  // 兼容旧数据（中文标签 -> key）
+  const LEGACY_ZH_TO_KEY = {
+    "停车费":"parking",
+    "超市购物":"grocery",
+    "外出吃饭":"dining",
+    "礼物":"gift",
+    "油费/交通":"transport",
+    "生活用品":"household",
+    "账单/订阅":"bills",
+    "医疗/药品":"medical",
+    "娱乐/休闲":"entertainment",
+    "其他":"other"
+  };
+  function normalizeTagsToKeys(tags){
+    if (!Array.isArray(tags)) return [];
+    const out = [];
+    for (const x of tags) {
+      if (!x) continue;
+      const s = String(x).trim();
+      if (TAG_KEYS.includes(s)) out.push(s);
+      else if (LEGACY_ZH_TO_KEY[s]) out.push(LEGACY_ZH_TO_KEY[s]);
+      else out.push(s); // unknown keep raw
+    }
+    // 去重
+    return Array.from(new Set(out));
+  }
+  function tagLabel(tag){
+    if (TAG_LABEL_KEY[tag]) return t(TAG_LABEL_KEY[tag]);
+    return String(tag);
   }
 
   /***********************
@@ -540,20 +1376,18 @@
 
   gateOkBtn.addEventListener('click', ()=>{
     const name = normalizeBookName(gateInput.value);
-    if (!name) { alert('请输入账本名称'); return; }
+    if (!name) { alert(t('input_book_name')); return; }
     meta = loadMeta();
     const bn = ensureBook(meta, name);
     if (!bn) return;
     closeGate();
     rebuildBookSelect();
-    // 载入账本并刷新页面状态
     switchBook(bn);
   });
 
   gateCancelBtn.addEventListener('click', ()=>{
-    // 如果还没有任何账本，则不允许取消（否则用户进不去）
     meta = loadMeta();
-    if (!meta.books.length) { alert('请先创建一个账本名称'); return; }
+    if (!meta.books.length) { alert(t('must_create_book')); return; }
     closeGate();
   });
 
@@ -572,12 +1406,10 @@
     meta = loadMeta();
     const cur = meta.currentBook;
     if (!cur) return;
-    const ok = confirm(`确定删除账本「${cur}」吗？\n删除后该账本的本地数据将被移除，无法恢复。`);
+    const ok = confirm(t('confirm_delete_book', { name: cur }));
     if (!ok) return;
 
-    // 删除该账本数据
     localStorage.removeItem(bookDataKey(cur));
-    // 更新 meta
     meta.books = meta.books.filter(b => b !== cur);
     meta.currentBook = meta.books.length ? meta.books[0] : null;
     saveMeta(meta);
@@ -590,15 +1422,19 @@
   /***********************
    * 日期工具
    ***********************/
-  const weekMap = ['周日','周一','周二','周三','周四','周五','周六'];
+  const weekMapZh = ['周日','周一','周二','周三','周四','周五','周六'];
+  const weekMapEn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   function pad2(n){ return String(n).padStart(2,'0'); }
   function parseYm(ymStr){ const [y,m] = ymStr.split('-').map(Number); return { y, m }; }
   function daysInMonthOf(ymStr){ const { y, m } = parseYm(ymStr); return new Date(y, m, 0).getDate(); }
   function parseYmd(ymdStr){ const [y,m,d] = ymdStr.split('-').map(Number); return new Date(y, (m||1)-1, d||1); }
-  function weekdayOf(ymdStr){ return weekMap[parseYmd(ymdStr).getDay()]; }
+  function weekdayOf(ymdStr){
+    const idx = parseYmd(ymdStr).getDay();
+    const lang = getSavedLang();
+    return (lang === 'zh') ? weekMapZh[idx] : weekMapEn[idx];
+  }
   function monthEndYmd(ymStr){ return `${ymStr}-${pad2(daysInMonthOf(ymStr))}`; }
 
-  // 今日
   const now = new Date();
   const currentYm = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
   const todayYmd = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
@@ -607,7 +1443,6 @@
   /***********************
    * 本页业务状态（绑定“当前账本数据”）
    ***********************/
-  // DOM
   const monthNav = document.getElementById('monthNav');
   const dateLine = document.getElementById('dateLine');
   const spentLabel = document.getElementById('spentLabel');
@@ -634,7 +1469,6 @@
   const chipButtons = Array.from(document.querySelectorAll('.chip'));
   const monthCalendar = document.getElementById('monthCalendar');
 
-  // 币种
   const currencySelect = document.getElementById('currencySelect');
   const CURRENCY_DECIMALS = { JPY: 0, KRW: 0, VND: 0, CNY: 2, USD: 2, CAD: 2, EUR: 2, GBP: 2 };
   function normalizeCurrency(code){
@@ -645,20 +1479,16 @@
     return CURRENCY_DECIMALS[normalizeCurrency(code)] ?? 2;
   }
 
-  // 当前账本数据
-  let bookData = null;        // {months, settings}
+  let bookData = null;
   let activeCurrency = 'CAD';
 
-  // 当前月份/日
   let activeYm = currentYm;
   let monthData = null;
 
-  // 草稿
   let editYmd = todayYmd;
   let draft = { total: null, tags: [] };
   let dirty = false;
 
-  // 保存按钮短提示
   let savedToastTimer = null;
 
   function isFutureDate(ymdStr){ return ymdStr > todayYmd; }
@@ -681,7 +1511,7 @@
     if (!rec) return { total: null, tags: [], createdAt: null, updatedAt: null, edited: false };
     return {
       total: (typeof rec.total === 'number') ? rec.total : (rec.total ?? null),
-      tags: Array.isArray(rec.tags) ? rec.tags : [],
+      tags: normalizeTagsToKeys(Array.isArray(rec.tags) ? rec.tags : []),
       createdAt: rec.createdAt ?? null,
       updatedAt: rec.updatedAt ?? null,
       edited: !!rec.edited
@@ -717,25 +1547,31 @@
   function setConfirmState(isDirty){
     dirty = isDirty;
     confirmBtn.disabled = !dirty;
-    confirmBtn.textContent = '确认修改';
+    confirmBtn.textContent = t('confirm_edit');
   }
 
   function markSavedOnRecordBtn(){
     if (savedToastTimer) { clearTimeout(savedToastTimer); savedToastTimer = null; }
     recordBtn.classList.add('saved');
-    recordBtn.textContent = '已保存';
+    recordBtn.textContent = t('saved');
     savedToastTimer = setTimeout(()=>{
       recordBtn.classList.remove('saved');
-      recordBtn.textContent = '保存这天';
+      recordBtn.textContent = t('save_day');
     }, 1200);
   }
 
   function getSelectedTags(){
-    return chipButtons.filter(b => b.classList.contains('on')).map(b => b.textContent.trim());
+    return chipButtons
+      .filter(b => b.classList.contains('on'))
+      .map(b => b.getAttribute('data-tag'))
+      .filter(Boolean);
   }
   function setSelectedTags(tags){
-    const set = new Set(tags || []);
-    chipButtons.forEach(b => b.classList.toggle('on', set.has(b.textContent.trim())));
+    const set = new Set(normalizeTagsToKeys(tags || []));
+    chipButtons.forEach(b => {
+      const k = b.getAttribute('data-tag');
+      b.classList.toggle('on', !!k && set.has(k));
+    });
   }
 
   function updateDatePickerRange(){
@@ -744,25 +1580,26 @@
   }
 
   function renderTopLines(){
-    dateLine.textContent = `月份：${activeYm}`;
+    if (!dateLine || !spentLabel || !needLabel) return;
+    dateLine.textContent = t('month_prefix', { ym: activeYm });
     if (activeYm === currentYm) {
-      spentLabel.textContent = '截至目前已花';
-      needLabel.textContent = '为不超支：从明天起后续日均需 ≤';
+      spentLabel.textContent = t('spent_until');
+      needLabel.textContent = t('need_today');
     } else {
-      spentLabel.textContent = '本月已花';
-      needLabel.textContent = '该月已结束';
+      spentLabel.textContent = t('spent_month');
+      needLabel.textContent = t('need_ended');
     }
   }
 
   function renderEditLine(){
-    datePicker.classList.remove('edited');
-    dayLine.textContent = `编辑：${editYmd}（${weekdayOf(editYmd)}）`;
+    if (!dayLine) return;
+    dayLine.textContent = t('edit_prefix', { ymd: editYmd, wk: weekdayOf(editYmd) });
   }
 
   function loadDraftFromRecord(){
     const rec = getDayRecord(editYmd);
     draft.total = (typeof rec.total === 'number') ? rec.total : null;
-    draft.tags = (rec.tags || []).slice();
+    draft.tags = normalizeTagsToKeys(rec.tags || []).slice();
     dayInput.value = (draft.total === null) ? '' : String(draft.total);
     setSelectedTags(draft.tags);
     setConfirmState(false);
@@ -793,9 +1630,9 @@
     if (balance === null) { balanceVal.textContent = '—'; balanceVal.style.color = '#111'; return; }
     const abs = Math.abs(balance);
     const dp = decimalsForCurrency(activeCurrency);
-    if (balance > 0) { balanceVal.textContent = `${abs.toFixed(dp)} ${activeCurrency}  剩余`; balanceVal.style.color = '#2e7d32'; }
-    else if (balance < 0) { balanceVal.textContent = `${abs.toFixed(dp)} ${activeCurrency}  超支`; balanceVal.style.color = '#c62828'; }
-    else { balanceVal.textContent = `0 ${activeCurrency}  平衡`; balanceVal.style.color = '#111'; }
+    if (balance > 0) { balanceVal.textContent = `${abs.toFixed(dp)} ${activeCurrency}  ` + (getSavedLang()==='zh' ? '剩余' : 'left'); balanceVal.style.color = '#2e7d32'; }
+    else if (balance < 0) { balanceVal.textContent = `${abs.toFixed(dp)} ${activeCurrency}  ` + (getSavedLang()==='zh' ? '超支' : 'over'); balanceVal.style.color = '#c62828'; }
+    else { balanceVal.textContent = `0 ${activeCurrency}`; balanceVal.style.color = '#111'; }
   }
 
   function renderStatsAndList(){
@@ -817,16 +1654,18 @@
     }
 
     const keys = Object.keys(monthData.days).filter(k => k.startsWith(activeYm+'-')).sort();
-    if (!keys.length) { monthList.textContent = '（暂无记录）'; renderMonthCalendar(); return; }
+    if (!keys.length) { monthList.textContent = t('no_records'); renderMonthCalendar(); return; }
 
     monthList.innerHTML = keys.map(k => {
       const rec = normalizeRecord(monthData.days[k]);
       const money = (typeof rec.total === 'number') ? fmtMoney(rec.total) : '—';
-      const tags = (rec.tags && rec.tags.length) ? rec.tags.join(' / ') : '（无标签）';
+      const tags = (rec.tags && rec.tags.length)
+        ? rec.tags.map(tagLabel).join(' / ')
+        : (getSavedLang()==='zh' ? '（无标签）' : '(No tags)');
       const dateHtml = rec.edited
         ? `<span style="color:#c62828;font-weight:700;">${k}</span>`
         : `<span>${k}</span>`;
-      const editedBadge = rec.edited ? ` <span style="color:#c62828;">（已改）</span>` : '';
+      const editedBadge = rec.edited ? ` <span style="color:#c62828;">(${getSavedLang()==='zh' ? '已改' : 'edited'})</span>` : '';
       return `<div style="padding:6px 0;border-bottom:1px dashed #eee;">
                 <strong>${dateHtml}</strong>${editedBadge} ｜ ${money}<br/>
                 <span style="color:#666;font-size:13px;">${tags}</span>
@@ -880,12 +1719,12 @@
   }
 
   function commitDay(dateStr, newTotal, newTags, asConfirmedEdit){
-    if (isFutureDate(dateStr)) { alert('不能填写未来日期（例如明天）。'); return; }
+    if (isFutureDate(dateStr)) { alert(t('cannot_future')); return; }
 
     const existing0 = monthData.days[dateStr];
     const existing = normalizeRecord(existing0);
 
-    monthData.undo.day.push({ date: dateStr, prev: { ...existing, tags: existing.tags.slice() } });
+    monthData.undo.day.push({ date: dateStr, prev: { ...existing, tags: (existing.tags || []).slice() } });
     if (monthData.undo.day.length > 120) monthData.undo.day.shift();
 
     const nowTs = Date.now();
@@ -894,7 +1733,7 @@
 
     monthData.days[dateStr] = {
       total: newTotal,
-      tags: Array.isArray(newTags) ? newTags.slice() : [],
+      tags: normalizeTagsToKeys(newTags),
       createdAt: isFirstWrite ? nowTs : existing.createdAt,
       updatedAt: nowTs,
       edited: existing.edited || editedFlag
@@ -920,7 +1759,7 @@
 
   function switchEditDate(newYmd){
     if (!newYmd) { datePicker.value = editYmd; return; }
-    if (isFutureDate(newYmd)) { alert('不能填写未来日期（例如明天）。'); datePicker.value = editYmd; return; }
+    if (isFutureDate(newYmd)) { alert(t('cannot_future')); datePicker.value = editYmd; return; }
 
     const ym = newYmd.slice(0,7);
     if (ym !== activeYm) { switchMonth(ym, newYmd); return; }
@@ -956,9 +1795,10 @@
     monthNav.innerHTML = arr.map(m=>{
       const d = monthRecordedDaysCount(m);
       const active = (m === activeYm) ? 'active' : '';
+      const daySuffix = (getSavedLang()==='zh') ? '天' : 'days';
       return `<button class="month-item ${active}" data-ym="${m}" type="button">
                 <span>${m}</span>
-                <small>${d}天</small>
+                <small>${d}${daySuffix}</small>
               </button>`;
     }).join('');
 
@@ -986,7 +1826,7 @@
   }
 
   function switchMonth(newYm, desiredYmd = null){
-    if (newYm > currentYm) { alert('未来月份不可编辑。'); return; }
+    if (newYm > currentYm) { alert(t('cannot_future_month')); return; }
 
     activeYm = newYm;
     monthData = ensureMonth(bookData, activeYm);
@@ -1135,7 +1975,7 @@
     const v = safeEval(expr);
     lastValue = v;
     if (v === null) {
-      calcValEl.textContent = '表达式无效';
+      calcValEl.textContent = t('expr_invalid');
     } else {
       const dp = decimalsForCurrency(activeCurrency);
       const shown = Math.round(v * Math.pow(10, dp)) / Math.pow(10, dp);
@@ -1160,7 +2000,7 @@
   });
 
   function applyCalcResult(){
-    if (lastValue === null) { alert('表达式无效，请修改后再确认'); return; }
+    if (lastValue === null) { alert(t('expr_invalid_alert')); return; }
     const dp = decimalsForCurrency(activeCurrency);
     const normalized = Math.round(lastValue * Math.pow(10, dp)) / Math.pow(10, dp);
 
@@ -1168,7 +2008,7 @@
       planInput.value = String(normalized);
       commitPlan(normalized);
     } else if (calcTarget === 'day') {
-      if (isFutureDate(editYmd)) { alert('不能填写未来日期。'); return; }
+      if (isFutureDate(editYmd)) { alert(t('cannot_future_short')); return; }
       dayInput.value = String(normalized);
       draft.total = normalized;
       onDraftChanged();
@@ -1198,7 +2038,6 @@
     bookData.settings = bookData.settings || { currency: 'CAD' };
     activeCurrency = normalizeCurrency(bookData.settings.currency || 'CAD');
 
-    // 初始化月份/日期
     activeYm = currentYm;
     monthData = ensureMonth(bookData, activeYm);
 
@@ -1207,11 +2046,9 @@
       saveCurrentBook();
     }
 
-    // 同步 UI
     rebuildBookSelect();
     currencySelect.value = activeCurrency;
 
-    // 初始化输入
     editYmd = todayYmd;
     updateDatePickerRange();
     datePicker.value = editYmd;
@@ -1223,17 +2060,28 @@
     buildMonthList();
     renderStatsAndList();
     renderMonthCalendar();
+
+    // 语言刷新（防止切账本后文本不同步）
+    applyI18n();
   }
 
   /***********************
    * 启动
    ***********************/
   function bootstrap(){
+    initI18n();
+    initTaxReminder();
+
     rebuildBookSelect();
     requireBookOnStart();
     meta = loadMeta();
     if (meta.currentBook) {
       switchBook(meta.currentBook);
+    }
+    currencySelect.addEventListener('change', ()=> setCurrency(currencySelect.value));
+    // 初始设置币种（确保显示一致）
+    if (bookData && bookData.settings && bookData.settings.currency) {
+      currencySelect.value = normalizeCurrency(bookData.settings.currency);
     }
   }
 
