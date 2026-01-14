@@ -1327,3 +1327,391 @@ taxHideToggle.addEventListener("change", ()=>{
 });
 
 </script>
+<!-- ======= 第 7 段：主逻辑收尾 + 税务按钮/倒计时 + 删除账本二次确认弹窗 ======= -->
+<script>
+/***********************
+ * i18n（补齐常用语言：zh/en/ja/ko + 6种最常用语言：es/fr/de/pt/ru/ar）
+ * 说明：这 6 种语言先用英文作为默认回退，不会缺 key，也不会报错。
+ ***********************/
+(function ensureExtraLangFallback(){
+  const extra = ["es","fr","de","pt","ru","ar"];
+  extra.forEach(code=>{
+    if (!I18N[code]) I18N[code] = {};
+    I18N[code] = new Proxy(I18N[code], {
+      get: (_, k) => (I18N[code][k] ?? I18N.en[k] ?? String(k))
+    });
+  });
+})();
+
+/***********************
+ * Tax Reminder 2.0（改成：一个按钮 + 倒计时）
+ * 逻辑：
+ * - 按钮名：税务提醒（Tax Reminder）
+ * - 旁边倒计时以“天”为单位：
+ *   - 如果还没到 Apr 30：显示“距离报税截止还有 X 天”
+ *   - 如果在 Apr 30 ~ Jun 15（且自雇）：显示“距离自雇报税截止还有 X 天”
+ *   - 如果在 Apr 30 当天：显示“今天是报税/补税截止日”
+ *   - 如果过了期限：显示“本年度税务期限已过（以 CRA 为准）”
+ * - “今年不再提示”不再把按钮弄没，而是只隐藏展开内容，按钮永远可点打开
+ ***********************/
+(function upgradeTaxUI(){
+  const card = document.getElementById("taxReminderCard");
+  if (!card) return;
+
+  // 复用原来的元素
+  const text = document.getElementById("taxReminderText");
+  const selfToggle = document.getElementById("isSelfEmployedToggle");
+  const hideToggle = document.getElementById("hideTaxReminderToggle");
+
+  // 创建：按钮 + 倒计时
+  const head = document.createElement("div");
+  head.style.display = "flex";
+  head.style.alignItems = "center";
+  head.style.justifyContent = "space-between";
+  head.style.gap = "10px";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn";
+  btn.id = "taxBtn";
+  btn.style.fontWeight = "900";
+  btn.style.borderRadius = "12px";
+  btn.style.padding = "10px 12px";
+  btn.style.background = "#111";
+  btn.style.color = "#fff";
+  btn.style.border = "0";
+  btn.style.cursor = "pointer";
+  btn.textContent = (getSavedLang()==="zh") ? "税务提醒" : "Tax Reminder";
+
+  const counter = document.createElement("div");
+  counter.id = "taxCounter";
+  counter.style.fontSize = "13px";
+  counter.style.fontWeight = "800";
+  counter.style.color = "#111";
+  counter.style.background = "#f3f4f8";
+  counter.style.padding = "8px 10px";
+  counter.style.borderRadius = "12px";
+  counter.style.border = "1px solid #e6e6e6";
+  counter.style.whiteSpace = "nowrap";
+
+  head.appendChild(btn);
+  head.appendChild(counter);
+
+  // 把 head 插到 card 最前面（替换原 title 的视觉结构）
+  const oldTitle = card.querySelector(".tax-title");
+  if (oldTitle) oldTitle.style.display = "none";
+  card.insertBefore(head, card.firstChild);
+
+  // 折叠区：text + toggles + note
+  const foldWrap = document.createElement("div");
+  foldWrap.id = "taxFoldWrap";
+  foldWrap.style.marginTop = "10px";
+
+  // 把原有内容搬进去
+  const linesWrap = document.createElement("div");
+  linesWrap.appendChild(text);
+
+  const row = card.querySelector(".tax-row");
+  const note = card.querySelector(".tax-note");
+
+  foldWrap.appendChild(linesWrap);
+  if (row) foldWrap.appendChild(row);
+  if (note) foldWrap.appendChild(note);
+
+  // 清空 card（保留 head），再放回 foldWrap
+  // 但不要把 head 移除
+  while (card.children.length > 1) card.removeChild(card.lastChild);
+  card.appendChild(foldWrap);
+
+  // 折叠状态：永远可打开
+  let isOpen = true;
+  function setOpen(v){
+    isOpen = v;
+    foldWrap.style.display = isOpen ? "block" : "none";
+  }
+
+  btn.addEventListener("click", ()=>{
+    setOpen(!isOpen);
+  });
+
+  // hide 仅隐藏折叠内容，不隐藏按钮
+  function applyHideState(){
+    const hidden = isTaxHiddenForYear();
+    hideToggle.checked = hidden;
+    if (hidden) setOpen(false);
+  }
+
+  hideToggle.addEventListener("change", ()=>{
+    setTaxHiddenForYear(hideToggle.checked);
+    applyHideState();
+  });
+
+  // 倒计时（天）
+  function daysDiff(fromDate, toDate){
+    // 只按日期算天，不按小时
+    const a = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate()).getTime();
+    const b = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate()).getTime();
+    return Math.ceil((b - a) / 86400000);
+  }
+
+  function renderTaxCounter(){
+    const y = new Date().getFullYear();
+    const today = new Date();
+    const apr30 = new Date(y, 3, 30); // month 0-based
+    const jun15 = new Date(y, 5, 15);
+
+    const lang = getSavedLang();
+    const isSE = !!selfToggle.checked;
+
+    // case 1: before Apr 30
+    if (today < apr30){
+      const d = daysDiff(today, apr30);
+      counter.textContent = (lang==="zh")
+        ? `距离报税截止还有 ${d} 天`
+        : `Days to Apr 30: ${d}`;
+      return;
+    }
+
+    // case 2: exactly Apr 30
+    if (today.getFullYear()===apr30.getFullYear() && today.getMonth()===apr30.getMonth() && today.getDate()===apr30.getDate()){
+      counter.textContent = (lang==="zh")
+        ? "今天是报税/补税截止日"
+        : "Today is Apr 30 deadline";
+      return;
+    }
+
+    // case 3: after Apr 30
+    if (!isSE){
+      // 非自雇：Apr 30 之后直接提示已过
+      counter.textContent = (lang==="zh")
+        ? "本年度税务期限已过（以 CRA 为准）"
+        : "Tax deadline passed (check CRA)";
+      return;
+    }
+
+    // 自雇：Apr30 ~ Jun15 显示到 Jun15 的倒计时
+    if (today < jun15){
+      const d = daysDiff(today, jun15);
+      counter.textContent = (lang==="zh")
+        ? `距离自雇报税截止还有 ${d} 天`
+        : `Days to Jun 15: ${d}`;
+      return;
+    }
+
+    // exactly Jun 15
+    if (today.getFullYear()===jun15.getFullYear() && today.getMonth()===jun15.getMonth() && today.getDate()===jun15.getDate()){
+      counter.textContent = (lang==="zh")
+        ? "今天是自雇报税截止日"
+        : "Today is Jun 15 deadline";
+      return;
+    }
+
+    // after Jun15
+    counter.textContent = (lang==="zh")
+      ? "本年度税务期限已过（以 CRA 为准）"
+      : "Tax deadline passed (check CRA)";
+  }
+
+  // 切换语言时同步按钮名
+  const _applyI18n = applyI18n;
+  applyI18n = function(){
+    _applyI18n();
+    btn.textContent = (getSavedLang()==="zh") ? "税务提醒" : "Tax Reminder";
+    renderTaxCounter();
+  };
+
+  selfToggle.addEventListener("change", ()=>{
+    renderTaxReminder();
+    renderTaxCounter();
+  });
+
+  renderTaxReminder();
+  applyHideState();
+  renderTaxCounter();
+
+  // 每 6 小时刷新一次倒计时（避免跨天不更新）
+  setInterval(renderTaxCounter, 6 * 60 * 60 * 1000);
+})();
+
+/***********************
+ * 删除账本：改为屏幕中央弹窗 + 确认按钮 10 秒倒计时
+ * 替换原 confirm() 逻辑
+ ***********************/
+(function replaceDeleteBookConfirm(){
+  const delBtn = document.getElementById("bookDelBtn");
+  if (!delBtn) return;
+
+  // 创建弹窗
+  const mask = document.createElement("div");
+  mask.id = "delMask";
+  mask.style.position = "fixed";
+  mask.style.inset = "0";
+  mask.style.background = "rgba(0,0,0,.45)";
+  mask.style.display = "none";
+  mask.style.alignItems = "center";
+  mask.style.justifyContent = "center";
+  mask.style.padding = "16px";
+  mask.style.zIndex = "1200";
+
+  const box = document.createElement("div");
+  box.style.width = "min(520px, 100%)";
+  box.style.background = "#fff";
+  box.style.borderRadius = "16px";
+  box.style.boxShadow = "0 10px 30px rgba(0,0,0,.18)";
+  box.style.padding = "14px";
+
+  const title = document.createElement("div");
+  title.style.fontWeight = "900";
+  title.style.fontSize = "16px";
+  title.style.marginBottom = "8px";
+  title.id = "delTitle";
+
+  const msg = document.createElement("div");
+  msg.style.color = "#333";
+  msg.style.fontSize = "13px";
+  msg.style.lineHeight = "1.6";
+  msg.style.whiteSpace = "pre-wrap";
+  msg.id = "delMsg";
+
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.gap = "10px";
+  row.style.marginTop = "12px";
+
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn";
+  cancel.textContent = (getSavedLang()==="zh") ? "取消" : "Cancel";
+  cancel.style.flex = "1";
+
+  const ok = document.createElement("button");
+  ok.type = "button";
+  ok.className = "btn";
+  ok.style.flex = "1";
+  ok.style.background = "#c62828";
+  ok.style.color = "#fff";
+  ok.style.border = "0";
+  ok.style.fontWeight = "900";
+  ok.style.cursor = "not-allowed";
+  ok.disabled = true;
+  ok.id = "delOkBtn";
+
+  row.appendChild(cancel);
+  row.appendChild(ok);
+
+  box.appendChild(title);
+  box.appendChild(msg);
+  box.appendChild(row);
+  mask.appendChild(box);
+  document.body.appendChild(mask);
+
+  let timer = null;
+  let left = 10;
+  let pendingBook = null;
+
+  function openDelModal(bookName){
+    pendingBook = bookName;
+    left = 10;
+
+    title.textContent = (getSavedLang()==="zh") ? "删除账本确认" : "Confirm deletion";
+    msg.textContent = t("confirm_delete_book", { name: bookName });
+
+    ok.disabled = true;
+    ok.style.cursor = "not-allowed";
+    ok.textContent = (getSavedLang()==="zh") ? `确认删除（${left}s）` : `Delete (${left}s)`;
+
+    mask.style.display = "flex";
+
+    if (timer) clearInterval(timer);
+    timer = setInterval(()=>{
+      left -= 1;
+      if (left <= 0){
+        clearInterval(timer);
+        timer = null;
+        ok.disabled = false;
+        ok.style.cursor = "pointer";
+        ok.textContent = (getSavedLang()==="zh") ? "确认删除" : "Delete";
+      } else {
+        ok.textContent = (getSavedLang()==="zh") ? `确认删除（${left}s）` : `Delete (${left}s)`;
+      }
+    }, 1000);
+  }
+
+  function closeDelModal(){
+    mask.style.display = "none";
+    if (timer) clearInterval(timer);
+    timer = null;
+    pendingBook = null;
+  }
+
+  mask.addEventListener("click", (e)=>{ if (e.target === mask) closeDelModal(); });
+  cancel.addEventListener("click", closeDelModal);
+
+  ok.addEventListener("click", ()=>{
+    if (ok.disabled) return;
+    if (!pendingBook) return;
+
+    // 执行原删除逻辑
+    meta = loadMeta();
+    const cur = pendingBook;
+
+    localStorage.removeItem(bookDataKey(cur));
+    meta.books = meta.books.filter(b => b !== cur);
+    meta.currentBook = meta.books.length ? meta.books[0] : null;
+    saveMeta(meta);
+
+    rebuildBookSelect();
+    if (meta.currentBook) switchBook(meta.currentBook);
+    else requireBookOnStart();
+
+    closeDelModal();
+  });
+
+  // 覆盖原按钮点击事件（避免双绑定）
+  delBtn.addEventListener("click", (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    meta = loadMeta();
+    const cur = meta.currentBook;
+    if (!cur) return;
+    openDelModal(cur);
+  }, true);
+
+  // 语言切换时更新弹窗按钮文字（如果弹窗开着）
+  const _applyI18n2 = applyI18n;
+  applyI18n = function(){
+    _applyI18n2();
+    cancel.textContent = (getSavedLang()==="zh") ? "取消" : "Cancel";
+    if (mask.style.display === "flex" && pendingBook){
+      title.textContent = (getSavedLang()==="zh") ? "删除账本确认" : "Confirm deletion";
+      msg.textContent = t("confirm_delete_book", { name: pendingBook });
+      if (ok.disabled){
+        ok.textContent = (getSavedLang()==="zh") ? `确认删除（${left}s）` : `Delete (${left}s)`;
+      } else {
+        ok.textContent = (getSavedLang()==="zh") ? "确认删除" : "Delete";
+      }
+    }
+  };
+})();
+
+/***********************
+ * 关键：统一初始化（如果这里没跑起来，所有按钮都不会动）
+ ***********************/
+(function finalBootstrap(){
+  // 语言 & 税务先初始化
+  initI18n();
+  initTaxReminder();
+
+  // 账本初始化
+  rebuildBookSelect();
+  requireBookOnStart();
+  meta = loadMeta();
+  if (meta.currentBook) switchBook(meta.currentBook);
+
+  // 币种切换
+  currencySelect.addEventListener('change', ()=> setCurrency(currencySelect.value));
+
+  // 首次也刷新一次（确保界面文字与倒计时正确）
+  applyI18n();
+})();
+</script>
