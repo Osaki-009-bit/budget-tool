@@ -2,1716 +2,585 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>轻记账｜客观统计工具</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>轻松记账（离线版）</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:#f6f7fb;}
-    .wrap{max-width:980px;margin:0 auto;padding:16px;}
-    .layout{display:flex;gap:12px;align-items:flex-start;}
-    .sidebar{
-      width:210px;flex:0 0 210px;
-      position:sticky;top:12px;
-      background:#fff;border-radius:16px;padding:12px;
-      box-shadow:0 6px 18px rgba(0,0,0,.06);
+    :root {
+      --bg: #0b0c10;
+      --card: #11131a;
+      --card2: #0f1117;
+      --text: #e9ecf1;
+      --muted: #aab2c0;
+      --line: rgba(255,255,255,.08);
+      --danger: #ff5a7a;
+      --ok: #37d67a;
+      --warn: #ffcc66;
+      --btn: #1b1f2b;
+      --btn2: #232a3c;
+      --focus: rgba(120,160,255,.35);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     }
-    .side-title{font-weight:800;font-size:14px;margin:2px 0 10px;}
-    .muted{color:#666;font-size:13px;line-height:1.5;margin-top:12px;}
-    .main{flex:1;min-width:0;}
-    .card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.06);}
-    h1{font-size:18px;margin:0 0 6px;}
-    .sub{color:#666;font-size:13px;margin:0 0 14px;line-height:1.5;}
-    label{display:block;font-size:14px;margin:12px 0 6px;}
-    input{width:100%;font-size:16px;padding:12px;border:1px solid #ddd;border-radius:12px;box-sizing:border-box;color:#111;}
-    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;}
-    .btn{font-size:14px;padding:10px 12px;border:0;border-radius:12px;background:#eef0f7;cursor:pointer;}
-    .btn-primary{background:#111;color:#fff;flex:1;min-width:160px;}
-    .btn-mini{font-size:12px;padding:6px 10px;border-radius:10px;}
-    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
-    .chip{padding:8px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;}
-    .chip.on{background:#111;color:#fff;border-color:#111;}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
-    .box{background:#fafbff;border:1px solid #eef0ff;border-radius:12px;padding:10px;}
-    .k{color:#666;font-size:13px;}
-    .v{font-size:18px;font-weight:800;margin-top:2px;}
-    details{margin-top:14px;}
-    summary{cursor:pointer;font-size:14px;}
-
-    /* ===== 左侧：账本 ===== */
-    .book-box{border:1px solid #e6e6e6;border-radius:16px;padding:12px;margin-bottom:12px;background:#fff;}
-    .book-label{font-size:12px;color:#666;margin-bottom:8px;}
-    .book-select{width:100%;font-size:18px;font-weight:900;padding:12px 12px;border-radius:14px;border:1px solid #ddd;cursor:pointer;background:#fff;box-sizing:border-box;}
-    .book-actions{display:flex;gap:8px;margin-top:10px;}
-    .book-actions .btn{flex:1;padding:10px 10px;font-size:13px;border-radius:12px;}
-    .book-hint{font-size:12px;color:#666;margin-top:8px;line-height:1.4;}
-
-    /* ===== 大币种选择 ===== */
-    .currency-box{border:1px solid #e6e6e6;border-radius:16px;padding:12px;margin-bottom:12px;background:#fff;}
-    .currency-label{font-size:12px;color:#666;margin-bottom:8px;}
-    .currency-select{width:100%;font-size:22px;font-weight:900;padding:12px 12px;border-radius:14px;border:1px solid #ddd;cursor:pointer;background:#fff;box-sizing:border-box;}
-    .currency-hint{font-size:12px;color:#666;margin-top:8px;line-height:1.4;}
-
-    /* ===== 语言选择 ===== */
-    .lang-box{border:1px solid #e6e6e6;border-radius:16px;padding:12px;margin-bottom:12px;background:#fff;}
-    .lang-label{font-size:12px;color:#666;margin-bottom:8px;}
-    .lang-select{width:100%;font-size:16px;font-weight:800;padding:10px 12px;border-radius:14px;border:1px solid #ddd;cursor:pointer;background:#fff;box-sizing:border-box;}
-    .lang-hint{font-size:12px;color:#666;margin-top:8px;line-height:1.4;}
-
-    /* ===== 月份列表 ===== */
-    .month-nav{display:flex;flex-direction:column;gap:6px;}
-    .month-item{
-      border:1px solid #e6e6e6;background:#fff;border-radius:12px;
-      padding:10px 10px;cursor:pointer;text-align:left;
-      display:flex;justify-content:space-between;align-items:center;gap:8px;
-      font-size:14px;
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: radial-gradient(1200px 800px at 15% 10%, rgba(90,120,255,.18), transparent 45%),
+                  radial-gradient(900px 700px at 85% 20%, rgba(80,255,180,.10), transparent 40%),
+                  linear-gradient(180deg, #0b0c10, #07080c);
+      color: var(--text);
     }
-    .month-item small{color:#666;font-size:12px;}
-    .month-item.active{border-color:#111;background:#111;color:#fff;}
-    .month-item.active small{color:#ddd;}
-
-    /* 保存提示 */
-    .btn-primary.saved{ background:#2e7d32 !important; }
-
-    /* ====== 本月状态日历（今天蓝 / 修改红 / 有记录绿 / 未记录白） ====== */
-    #monthCalendar{margin-top:8px;display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;}
-    .day-cell{
-      padding:8px 0;text-align:center;border-radius:10px;font-size:13px;
-      cursor:pointer;border:1px solid #ddd;user-select:none;position:relative;
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px 14px 36px; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 10px 6px 16px;
     }
-    .day-today{ background:#1976d2; color:#fff; font-weight:800; border-color:#1976d2; }
-    .day-edited{ background:#fdecea; color:#c62828; font-weight:800; }
-    .day-recorded{ background:#e8f5e9; color:#2e7d32; font-weight:800; }
-    .day-empty{ background:#ffffff; color:#333; }
-    .day-pad{ visibility:hidden; }
-    .day-selected{ box-shadow:0 0 0 2px #1976d2 inset; border-color:#1976d2; }
-    .day-today.day-selected{ box-shadow:0 0 0 2px rgba(255,255,255,.85) inset; }
-
-    /* 左侧颜色说明 */
-    .legend{ margin-top:12px; border-top:1px solid #f0f0f0; padding-top:10px; }
-    .legend-title{font-weight:800;font-size:13px;margin:0 0 8px;}
-    .legend-item{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px;color:#333;}
-    .legend-swatch{width:14px;height:14px;border-radius:4px;border:1px solid #ddd;flex:0 0 14px;}
-    .sw-blue{background:#1976d2;border-color:#1976d2;}
-    .sw-red{background:#fdecea;border-color:#c62828;}
-    .sw-green{background:#e8f5e9;border-color:#2e7d32;}
-    .sw-white{background:#ffffff;border-color:#ddd;}
-
-    /* ===== 确认修改：默认灰禁用，变更后黑可点 ===== */
-    .btn-confirm{
-      font-size:14px;padding:10px 14px;border:0;border-radius:12px;
-      background:#111;color:#fff;cursor:pointer;min-width:140px;flex:0 0 auto;
+    .title {
+      display: flex; flex-direction: column; gap: 4px;
     }
-    .btn-confirm:disabled{background:#e0e0e0;color:#888;cursor:not-allowed;}
-    .btn-cancel{
-      font-size:14px;padding:10px 14px;border:0;border-radius:12px;
-      background:#f0f0f0;cursor:pointer;min-width:140px;flex:0 0 auto;
+    .title h1 { margin: 0; font-size: 18px; letter-spacing: .2px; }
+    .title .sub { font-size: 12px; color: var(--muted); }
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 999px;
+      box-shadow: 0 1px 0 rgba(255,255,255,.03) inset;
+      white-space: nowrap;
     }
-
-    /* ===== 顶部工具行：历史日历 / 税务提醒 ===== */
-    .top-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 10px;}
-    .pill{
-      display:inline-flex;align-items:center;gap:10px;
-      padding:10px 12px;border-radius:999px;border:1px solid #e6e6e6;background:#fff;
-      box-shadow:0 6px 18px rgba(0,0,0,.04);
+    .pill b { font-weight: 650; }
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 14px;
     }
-    .pill strong{font-size:13px;}
-    .pill small{color:#666;font-size:12px;}
-    .pill .btn{padding:8px 10px;border-radius:999px;}
-    .countdown{font-weight:900;font-size:13px;}
-
-    /* ===== 通用弹窗 ===== */
-    .mask{
-      position:fixed;inset:0;background:rgba(0,0,0,.35);
-      display:none;align-items:center;justify-content:center;padding:16px;z-index:999;
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
     }
-    .modal{
-      width:min(560px, 100%);background:#fff;border-radius:16px;
-      box-shadow:0 10px 30px rgba(0,0,0,.18);padding:14px;
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
     }
-    .modal-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-    .modal-title{font-weight:900;}
-    .modal-close{border:0;background:#eef0f7;border-radius:12px;padding:8px 10px;cursor:pointer;}
-    .modal-body{margin-top:10px;}
-    .modal-actions{display:flex;gap:10px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
-    .danger{background:#c62828 !important;color:#fff !important;}
-
-    /* 历史日历弹窗：月份选择 + 日历网格 */
-    .hist-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-    .hist-row select{padding:10px 12px;border-radius:12px;border:1px solid #ddd;font-size:14px;}
-    #historyCalendar{margin-top:10px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
-    .hist-tip{color:#666;font-size:12px;line-height:1.5;margin-top:8px;}
-
-    /* 税务提醒弹窗排版 */
-    .tax-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
-    .tax-box{border:1px solid #eee;border-radius:12px;padding:10px;background:#fafafa;}
-    .tax-box .d{font-weight:900;}
-    .tax-box .s{color:#666;font-size:12px;line-height:1.5;margin-top:6px;}
-    .tax-toggle{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;}
-    .tax-toggle label{margin:0;font-size:13px;display:flex;gap:6px;align-items:center;}
-    .tax-note{color:#666;font-size:12px;line-height:1.5;margin-top:10px;}
-
-    @media (max-width: 820px){
-      .wrap{max-width:720px;}
-      .layout{flex-direction:column;}
-      .sidebar{width:100%;flex:0 0 auto;position:static;}
-      .month-nav{flex-direction:row;overflow:auto;gap:8px;padding-bottom:2px;}
-      .month-item{white-space:nowrap;min-width:140px;}
-      .legend{border-top:none;padding-top:0;margin-top:8px;}
-      .currency-box,.book-box,.lang-box{margin-bottom:10px;}
+    .card .hd {
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--line);
+      display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+      background: rgba(0,0,0,.12);
+    }
+    .card .hd h2 { margin: 0; font-size: 14px; }
+    .card .hd .hint { font-size: 12px; color: var(--muted); }
+    .card .bd { padding: 14px; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      outline: none;
+    }
+    textarea { min-height: 74px; resize: vertical; }
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(120,160,255,.55);
+      box-shadow: 0 0 0 4px var(--focus);
+    }
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--btn2), var(--btn));
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      transition: transform .03s ease, filter .15s ease;
+      user-select: none;
+    }
+    button:active { transform: translateY(1px); }
+    button.secondary { background: rgba(255,255,255,.03); }
+    button.danger { border-color: rgba(255,90,122,.35); background: rgba(255,90,122,.10); }
+    button.ok { border-color: rgba(55,214,122,.35); background: rgba(55,214,122,.10); }
+    .kpi {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 520px) { .kpi { grid-template-columns: 1fr; } }
+    .kpi .box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,.12);
+    }
+    .kpi .box .t { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .kpi .box .v { font-family: var(--mono); font-size: 16px; }
+    .list {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.12);
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: 120px 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    @media (max-width: 520px) {
+      .item { grid-template-columns: 1fr; }
+      .item .right { justify-content: flex-start; }
+    }
+    .item .amt { font-family: var(--mono); font-size: 16px; }
+    .item .note { color: var(--text); font-size: 13px; line-height: 1.35; }
+    .item .meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .item .right { display: flex; gap: 8px; justify-content: flex-end; }
+    .empty {
+      border: 1px dashed rgba(255,255,255,.16);
+      border-radius: 14px;
+      padding: 14px;
+      color: var(--muted);
+      background: rgba(0,0,0,.08);
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      background: rgba(15,18,26,.95);
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      color: var(--text);
+      font-size: 13px;
+      display: none;
+      max-width: 92vw;
+    }
+    .footer {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 0 6px;
+    }
+    .footer code { font-family: var(--mono); font-size: 12px; }
+    .split {
+      height: 1px;
+      background: var(--line);
+      margin: 12px 0;
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="layout">
+    <header>
+      <div class="title">
+        <h1>轻松记账（离线版）</h1>
+        <div class="sub">不联网 · 单文件 · 数据只保存在本机浏览器</div>
+      </div>
+      <div class="pill" title="当前账户（本机隔离存储）">
+        账户：<b id="who">-</b>
+        <button class="secondary" id="switchUserBtn" style="padding:6px 10px;border-radius:999px;">切换</button>
+      </div>
+    </header>
 
-      <aside class="sidebar">
-
-        <!-- 语言选择 -->
-        <div class="lang-box">
-          <div class="lang-label" data-i18n="lang_label">语言</div>
-          <select id="langSelect" class="lang-select">
-            <option value="zh">中文</option>
-            <option value="en">English</option>
-            <option value="ja">日本語</option>
-            <option value="ko">한국어</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
-            <option value="de">Deutsch</option>
-            <option value="pt">Português</option>
-            <option value="ru">Русский</option>
-            <option value="ar">العربية</option>
-          </select>
-          <div class="lang-hint" data-i18n="lang_hint">切换语言仅影响界面文字，不影响你已保存的数据。</div>
+    <div class="grid">
+      <!-- 左侧：新增 -->
+      <section class="card">
+        <div class="hd">
+          <h2>新增记录</h2>
+          <div class="hint">填完点“保存”，立刻写入本机</div>
         </div>
-
-        <!-- 账本选择 -->
-        <div class="book-box">
-          <div class="book-label" data-i18n="book_current">当前账本</div>
-          <select id="bookSelect" class="book-select"></select>
-          <div class="book-actions">
-            <button class="btn" id="bookNewBtn" type="button" data-i18n="book_new">新建</button>
-            <button class="btn" id="bookDelBtn" type="button" data-i18n="book_delete">删除</button>
-          </div>
-          <div class="book-hint" data-i18n="book_hint">每个账本的数据独立存储，不会互相串联。</div>
-        </div>
-
-        <!-- 大币种下拉 -->
-        <div class="currency-box">
-          <div class="currency-label" data-i18n="currency_current">当前币种</div>
-          <select id="currencySelect" class="currency-select">
-            <option value="CAD">CAD</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="GBP">GBP</option>
-            <option value="JPY">JPY</option>
-            <option value="CNY">CNY</option>
-          </select>
-          <div class="currency-hint" data-i18n="currency_hint">切换后仅改变显示单位，不做汇率换算。</div>
-        </div>
-
-        <div class="side-title" data-i18n="months_title">月份</div>
-        <div class="month-nav" id="monthNav"></div>
-
-        <div class="muted" style="margin-top:10px;" data-i18n="months_tip">
-          仅显示“有记录的过往月份”和“当前月”。点击月份可回看/修改该月数据。
-        </div>
-
-        <div class="legend">
-          <div class="legend-title" data-i18n="legend_title">颜色说明</div>
-          <div class="legend-item"><span class="legend-swatch sw-green"></span><span data-i18n="legend_green">绿色框 = 已填写</span></div>
-          <div class="legend-item"><span class="legend-swatch sw-red"></span><span data-i18n="legend_red">红色框 = 有修改</span></div>
-          <div class="legend-item"><span class="legend-swatch sw-blue"></span><span data-i18n="legend_blue">蓝色框 = 今日</span></div>
-          <div class="legend-item"><span class="legend-swatch sw-white"></span><span data-i18n="legend_white">白色框 = 未填写</span></div>
-        </div>
-      </aside>
-
-      <main class="main">
-        <div class="card">
-          <h1 data-i18n="app_title">轻记账（客观统计）</h1>
-          <p class="sub" id="dateLine">—</p>
-
-          <!-- 顶部工具：历史日历 + 税务提醒 -->
-          <div class="top-tools">
-            <div class="pill">
-              <strong data-i18n="history_btn">历史日历</strong>
-              <button class="btn btn-mini" id="historyOpenBtn" type="button" data-i18n="open">打开</button>
-            </div>
-
-            <div class="pill">
-              <strong data-i18n="tax_btn">税务提醒</strong>
-              <span class="countdown" id="taxCountdown">—</span>
-              <button class="btn btn-mini" id="taxOpenBtn" type="button" data-i18n="open">打开</button>
-            </div>
-          </div>
-          <label data-i18n="plan_label">本月计划花销总数</label>
-          <input id="planInput" type="number" inputmode="decimal" data-i18n-placeholder="plan_ph" placeholder="例如 1000" />
+        <div class="bd">
           <div class="row">
-            <button class="btn btn-mini" id="planEditBtn" type="button" data-i18n="edit_calc">修改（计算器）</button>
-            <button class="btn btn-mini" id="planUndoBtn" type="button" data-i18n="undo">撤销</button>
+            <div>
+              <label for="date">日期</label>
+              <input id="date" type="date" />
+            </div>
+            <div>
+              <label for="amount">金额（可正可负）</label>
+              <input id="amount" type="text" inputmode="decimal" placeholder="例如：12.5 或 -8" />
+            </div>
           </div>
 
-          <label data-i18n="edit_date_label">编辑日期（回改某一天）</label>
-          <input id="datePicker" type="date" />
-          <div class="sub" id="pickerHint" style="margin:6px 0 0;" data-i18n="picker_hint">
-            只能编辑到今天（不能写未来）。修改需点“确认修改”才生效。
+          <div style="margin-top:10px;">
+            <label for="note">备注</label>
+            <textarea id="note" placeholder="例如：午饭 / 地铁 / 购物"></textarea>
           </div>
 
-          <label data-i18n="month_calendar_label">本月日历</label>
-          <div id="monthCalendar" aria-label="本月日历"></div>
+          <div class="btns" style="margin-top:12px;">
+            <button class="ok" id="saveBtn">保存</button>
+            <button class="secondary" id="clearBtn">清空输入</button>
+          </div>
 
-          <label data-i18n="today_total_label">今日消费总数</label>
-          <input id="dayInput" type="number" inputmode="decimal" data-i18n-placeholder="day_ph" placeholder="例如 35" />
-          <div class="sub" id="dayLine" style="margin:6px 0 0;">—</div>
+          <div class="split"></div>
 
+          <div class="btns">
+            <button id="exportBtn">导出备份（JSON）</button>
+            <button id="importBtn">导入备份（JSON）</button>
+            <input id="importFile" type="file" accept="application/json" style="display:none" />
+          </div>
+
+          <div class="split"></div>
+
+          <div class="btns">
+            <button class="danger" id="wipeDayBtn" title="只删除当前日期的记录">清空当天</button>
+            <button class="danger" id="wipeAllBtn" title="删除该账户所有数据（不可恢复）">清空全部</button>
+          </div>
+
+          <div class="footer">
+            隐私说明：本程序不联网，不上传。数据存储在浏览器 <code>localStorage</code> 中；换电脑/换浏览器会看不到原数据，建议定期“导出备份”。
+          </div>
+        </div>
+      </section>
+
+      <!-- 右侧：查看 -->
+      <section class="card">
+        <div class="hd">
+          <h2>按日期查看</h2>
+          <div class="hint">选择日期即可查看当天账目</div>
+        </div>
+        <div class="bd">
           <div class="row">
-            <button class="btn-confirm" id="confirmBtn" type="button" disabled data-i18n="confirm_edit">确认修改</button>
-            <button class="btn-cancel" id="cancelBtn" type="button" data-i18n="cancel_edit">取消修改</button>
-            <button class="btn btn-mini" id="dayEditBtn" type="button" data-i18n="edit_calc">修改（计算器）</button>
-            <button class="btn btn-mini" id="dayUndoBtn" type="button" data-i18n="undo">撤销</button>
+            <div>
+              <label for="viewDate">查看日期</label>
+              <input id="viewDate" type="date" />
+            </div>
+            <div>
+              <label for="search">搜索备注（当日）</label>
+              <input id="search" type="text" placeholder="输入关键词过滤" />
+            </div>
           </div>
 
-          <label data-i18n="tags_label">当日花销内容标签（可多选）</label>
-          <div class="chips" id="tagChips">
-            <button class="chip" type="button" data-tag="parking" data-i18n="tag_parking">停车费</button>
-            <button class="chip" type="button" data-tag="grocery" data-i18n="tag_grocery">超市购物</button>
-            <button class="chip" type="button" data-tag="dining" data-i18n="tag_dining">外出吃饭</button>
-            <button class="chip" type="button" data-tag="gift" data-i18n="tag_gift">礼物</button>
-            <button class="chip" type="button" data-tag="transport" data-i18n="tag_transport">油费/交通</button>
-            <button class="chip" type="button" data-tag="household" data-i18n="tag_household">生活用品</button>
-            <button class="chip" type="button" data-tag="bills" data-i18n="tag_bills">账单/订阅</button>
-            <button class="chip" type="button" data-tag="medical" data-i18n="tag_medical">医疗/药品</button>
-            <button class="chip" type="button" data-tag="entertainment" data-i18n="tag_entertainment">娱乐/休闲</button>
-            <button class="chip" type="button" data-tag="other" data-i18n="tag_other">其他</button>
-          </div>
-
-          <div class="row" style="margin-top:12px;">
-            <button class="btn btn-primary" id="recordBtn" type="button" data-i18n="save_day">保存这天</button>
-          </div>
-
-          <div class="grid">
+          <div class="kpi">
             <div class="box">
-              <div class="k" id="spentLabel">—</div>
-              <div class="v" id="spentVal">—</div>
+              <div class="t">当天条数</div>
+              <div class="v" id="kCount">0</div>
             </div>
             <div class="box">
-              <div class="k" data-i18n="avg_actual">日均实际（S ÷ d）</div>
-              <div class="v" id="avgVal">—</div>
+              <div class="t">当天合计</div>
+              <div class="v" id="kSum">0.00</div>
             </div>
             <div class="box">
-              <div class="k" data-i18n="month_remaining">本月剩余</div>
-              <div class="v" id="balanceVal">—</div>
-            </div>
-            <div class="box">
-              <div class="k" id="needLabel">—</div>
-              <div class="v" id="needVal">—</div>
+              <div class="t">本账户总条数</div>
+              <div class="v" id="kAll">0</div>
             </div>
           </div>
 
-          <details open>
-            <summary data-i18n="month_list_title">本月每日列表（红色=曾修改）</summary>
-            <div class="muted" id="monthList" data-i18n="no_records">（暂无记录）</div>
-          </details>
+          <div class="split"></div>
 
-          <p class="muted" data-i18n="footer_note">
-            说明：切换币种只改变显示单位，不做汇率换算。每个账本独立存储。输入框改动不会立刻写入；只有产生修改行为时，“确认修改”才会变为可点击。
-          </p>
+          <div class="list" id="list"></div>
         </div>
-      </main>
+      </section>
+    </div>
 
-    </div>
-  </div>
-  <!-- 账本名称引导 -->
-  <div class="mask" id="gateMask" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
-      <div class="modal-hd">
-        <div class="modal-title" id="gateTitle" data-i18n="gate_title">请输入账本名称</div>
-        <button class="modal-close" id="gateClose" type="button" data-i18n="close">关闭</button>
-      </div>
-      <div class="modal-body">
-        <div class="sub" data-i18n="gate_desc">例如：a / 家庭 / Yang / 2025。每个账本的数据完全独立，不会互相串联。</div>
-        <input id="gateInput" data-i18n-placeholder="gate_ph" placeholder="账本名称（必填）" />
-        <div class="modal-actions">
-          <button class="btn" id="gateCancelBtn" type="button" data-i18n="cancel">取消</button>
-          <button class="btn btn-primary" id="gateOkBtn" type="button" data-i18n="gate_enter">进入</button>
-        </div>
-        <div class="muted" data-i18n="gate_tip" style="margin-top:10px;">
-          提示：账本名称仅存本地，不联网。如果你和别人共用同一台电脑同一浏览器，记得用不同账本名称。
-        </div>
-      </div>
-    </div>
+    <div class="toast" id="toast"></div>
   </div>
 
-  <!-- 计算器弹窗 -->
-  <div class="mask" id="calcMask" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
-      <div class="modal-hd">
-        <div class="modal-title" id="calcTitle" data-i18n="calc_title">计算器修改</div>
-        <button class="modal-close" id="calcClose" type="button" data-i18n="close">关闭</button>
-      </div>
-      <div class="modal-body">
-        <div style="border:1px solid #ddd;border-radius:12px;padding:10px;background:#fafafa;">
-          <div style="font-size:14px;color:#666;min-height:18px;word-break:break-all;" id="calcExpr">—</div>
-          <div style="font-size:22px;font-weight:900;margin-top:4px;min-height:28px;" id="calcVal">—</div>
-        </div>
-
-        <div style="margin-top:10px;display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
-          <button class="btn" data-k="C" type="button" data-i18n="calc_clear">清零</button>
-          <button class="btn" data-k="BS" type="button" data-i18n="calc_back">退格</button>
-          <button class="btn" data-k="/" type="button">÷</button>
-          <button class="btn" data-k="*" type="button">×</button>
-
-          <button class="btn" data-k="7" type="button">7</button>
-          <button class="btn" data-k="8" type="button">8</button>
-          <button class="btn" data-k="9" type="button">9</button>
-          <button class="btn" data-k="-" type="button">−</button>
-
-          <button class="btn" data-k="4" type="button">4</button>
-          <button class="btn" data-k="5" type="button">5</button>
-          <button class="btn" data-k="6" type="button">6</button>
-          <button class="btn" data-k="+" type="button">+</button>
-
-          <button class="btn" data-k="1" type="button">1</button>
-          <button class="btn" data-k="2" type="button">2</button>
-          <button class="btn" data-k="3" type="button">3</button>
-          <button class="btn" data-k="." type="button">.</button>
-
-          <button class="btn" data-k="0" type="button">0</button>
-          <button class="btn" data-k="00" type="button">00</button>
-          <button class="btn" data-k="=" type="button">=</button>
-          <button class="btn btn-primary" id="calcOk" type="button" data-i18n="write_back">把结果写回</button>
-        </div>
-
-        <div class="modal-actions">
-          <button class="btn" id="calcCancel" type="button" data-i18n="cancel">取消</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- 账本名称引导 -->
-  <div class="mask" id="gateMask" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
-      <div class="modal-hd">
-        <div class="modal-title" id="gateTitle" data-i18n="gate_title">请输入账本名称</div>
-        <button class="modal-close" id="gateClose" type="button" data-i18n="close">关闭</button>
-      </div>
-      <div class="modal-body">
-        <div class="sub" data-i18n="gate_desc">例如：a / 家庭 / Yang / 2025。每个账本的数据完全独立，不会互相串联。</div>
-        <input id="gateInput" data-i18n-placeholder="gate_ph" placeholder="账本名称（必填）" />
-        <div class="modal-actions">
-          <button class="btn" id="gateCancelBtn" type="button" data-i18n="cancel">取消</button>
-          <button class="btn btn-primary" id="gateOkBtn" type="button" data-i18n="gate_enter">进入</button>
-        </div>
-        <div class="muted" data-i18n="gate_tip" style="margin-top:10px;">
-          提示：账本名称仅存本地，不联网。如果你和别人共用同一台电脑同一浏览器，记得用不同账本名称。
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 计算器弹窗 -->
-  <div class="mask" id="calcMask" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
-      <div class="modal-hd">
-        <div class="modal-title" id="calcTitle" data-i18n="calc_title">计算器修改</div>
-        <button class="modal-close" id="calcClose" type="button" data-i18n="close">关闭</button>
-      </div>
-      <div class="modal-body">
-        <div style="border:1px solid #ddd;border-radius:12px;padding:10px;background:#fafafa;">
-          <div style="font-size:14px;color:#666;min-height:18px;word-break:break-all;" id="calcExpr">—</div>
-          <div style="font-size:22px;font-weight:900;margin-top:4px;min-height:28px;" id="calcVal">—</div>
-        </div>
-
-        <div style="margin-top:10px;display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
-          <button class="btn" data-k="C" type="button" data-i18n="calc_clear">清零</button>
-          <button class="btn" data-k="BS" type="button" data-i18n="calc_back">退格</button>
-          <button class="btn" data-k="/" type="button">÷</button>
-          <button class="btn" data-k="*" type="button">×</button>
-
-          <button class="btn" data-k="7" type="button">7</button>
-          <button class="btn" data-k="8" type="button">8</button>
-          <button class="btn" data-k="9" type="button">9</button>
-          <button class="btn" data-k="-" type="button">−</button>
-
-          <button class="btn" data-k="4" type="button">4</button>
-          <button class="btn" data-k="5" type="button">5</button>
-          <button class="btn" data-k="6" type="button">6</button>
-          <button class="btn" data-k="+" type="button">+</button>
-
-          <button class="btn" data-k="1" type="button">1</button>
-          <button class="btn" data-k="2" type="button">2</button>
-          <button class="btn" data-k="3" type="button">3</button>
-          <button class="btn" data-k="." type="button">.</button>
-
-          <button class="btn" data-k="0" type="button">0</button>
-          <button class="btn" data-k="00" type="button">00</button>
-          <button class="btn" data-k="=" type="button">=</button>
-          <button class="btn btn-primary" id="calcOk" type="button" data-i18n="write_back">把结果写回</button>
-        </div>
-
-        <div class="modal-actions">
-          <button class="btn" id="calcCancel" type="button" data-i18n="cancel">取消</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- 历史日历弹窗（问题1：点击打开，能切换月份，看每一天数据） -->
-  <div class="mask" id="historyMask" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
-      <div class="modal-hd">
-        <div class="modal-title" id="historyTitle" data-i18n="history_title">历史日历（查看/跳转）</div>
-        <button class="modal-close" id="historyClose" type="button" data-i18n="close">关闭</button>
-      </div>
-      <div class="modal-body">
-        <div class="hist-row">
-          <span class="sub" style="margin:0;" data-i18n="history_pick_month">选择月份：</span>
-          <select id="historyMonthSelect"></select>
-        </div>
-
-        <div id="historyCalendar" aria-label="历史日历"></div>
-
-        <div class="hist-tip" data-i18n="history_tip">
-          颜色规则同主界面：绿=有记录，红=被确认修改过，蓝=今天。点击某一天会跳回主界面并切换到对应日期。
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 税务提醒弹窗（问题2：按钮 + 天数倒计时 + 不再提醒可恢复） -->
-  <div class="mask" id="taxMask" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="taxTitle">
-      <div class="modal-hd">
-        <div class="modal-title" id="taxTitle" data-i18n="tax_title2">税务提醒</div>
-        <button class="modal-close" id="taxClose" type="button" data-i18n="close">关闭</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="sub" id="taxCountdownLine">—</div>
-
-        <div class="tax-grid">
-          <div class="tax-box">
-            <div class="d" id="taxDateA">—</div>
-            <div class="s" data-i18n="tax_desc_a">
-              普通个人：报税截止；若需补税，亦须在此日前缴清。
-            </div>
-          </div>
-          <div class="tax-box">
-            <div class="d" id="taxDateB">—</div>
-            <div class="s" data-i18n="tax_desc_b">
-              自雇人士：报税截止（但若需补税仍以 4/30 为准）。
-            </div>
-          </div>
-        </div>
-
-        <div class="tax-toggle">
-          <label>
-            <input type="checkbox" id="taxSelfToggle" />
-            <span data-i18n="tax_self_employed">自雇（Self-employed）</span>
-          </label>
-          <label>
-            <input type="checkbox" id="taxHideToggle" />
-            <span data-i18n="tax_hide_this_year">今年不再提示</span>
-          </label>
-        </div>
-
-        <div class="tax-note" data-i18n="tax_note">
-          注：这是时间点提醒，不提供报税建议；以 CRA 官方更新为准。
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 删除账本确认弹窗（问题3：居中 + 10秒倒计时才能点确认） -->
-  <div class="mask" id="deleteMask" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
-      <div class="modal-hd">
-        <div class="modal-title" id="deleteTitle" data-i18n="delete_title">删除当前账本</div>
-        <button class="modal-close" id="deleteClose" type="button" data-i18n="close">关闭</button>
-      </div>
-      <div class="modal-body">
-        <div class="sub" id="deleteText">—</div>
-        <div class="modal-actions">
-          <button class="btn" id="deleteCancelBtn" type="button" data-i18n="cancel">取消</button>
-          <button class="btn danger" id="deleteOkBtn" type="button" disabled>—</button>
-        </div>
-        <div class="muted" data-i18n="delete_tip" style="margin-top:10px;">
-          为防误删，确认按钮需要倒计时 10 秒后才能点击。
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
 <script>
-/***********************
- * 工具函数
- ***********************/
-const $ = (id)=>document.getElementById(id);
-function safeJsonParse(s, fallback){
-  try { return JSON.parse(s); } catch { return fallback; }
-}
-function pad2(n){ return String(n).padStart(2,'0'); }
-function todayLocalYmd(){
-  const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-}
-function parseYmd(ymd){ const [y,m,d]=ymd.split('-').map(Number); return new Date(y,(m||1)-1,d||1); }
-function parseYm(ym){ const [y,m]=ym.split('-').map(Number); return {y,m}; }
-function daysInMonth(ym){
-  const {y,m}=parseYm(ym);
-  return new Date(y,m,0).getDate();
-}
-function monthEndYmd(ym){ return `${ym}-${pad2(daysInMonth(ym))}`; }
-function diffDays(aYmd, bYmd){
-  // b - a (天)
-  const a = parseYmd(aYmd);
-  const b = parseYmd(bYmd);
-  const ms = b.getTime() - a.getTime();
-  return Math.ceil(ms / (24*3600*1000));
-}
-function isFutureDate(ymd){
-  return ymd > todayYmd;
-}
-
-const todayYmd = todayLocalYmd();
-const now = new Date();
-const currentYm = `${now.getFullYear()}-${pad2(now.getMonth()+1)}`;
-const currentDayIndex = now.getDate();
-
-/***********************
- * i18n（10种语言：中英日韩 + 西法德葡俄阿）
- ***********************/
-const I18N = {
-  zh: {
-    lang_label:"语言", lang_hint:"切换语言仅影响界面文字，不影响你已保存的数据。",
-    book_current:"当前账本", book_new:"新建", book_delete:"删除", book_hint:"每个账本的数据独立存储，不会互相串联。",
-    currency_current:"当前币种", currency_hint:"切换后仅改变显示单位，不做汇率换算。",
-    months_title:"月份", months_tip:"仅显示“有记录的过往月份”和“当前月”。点击月份可回看/修改该月数据。",
-    legend_title:"颜色说明", legend_green:"绿色框 = 已填写", legend_red:"红色框 = 有修改", legend_blue:"蓝色框 = 今日", legend_white:"白色框 = 未填写",
-    app_title:"轻记账（客观统计）",
-    history_btn:"历史日历", history_title:"历史日历（查看/跳转）", history_pick_month:"选择月份：", history_tip:"颜色规则同主界面：绿=有记录，红=被确认修改过，蓝=今天。点击某一天会跳回主界面并切换到对应日期。",
-    tax_btn:"税务提醒", tax_title2:"税务提醒",
-    tax_self_employed:"自雇（Self-employed）",
-    tax_hide_this_year:"今年不再提示",
-    tax_desc_a:"普通个人：报税截止；若需补税，亦须在此日前缴清。",
-    tax_desc_b:"自雇人士：报税截止（但若需补税仍以 4/30 为准）。",
-    tax_note:"注：这是时间点提醒，不提供报税建议；以 CRA 官方更新为准。",
-    plan_label:"本月计划花销总数", plan_ph:"例如 1000",
-    edit_calc:"修改（计算器）", undo:"撤销",
-    edit_date_label:"编辑日期（回改某一天）",
-    picker_hint:"只能编辑到今天（不能写未来）。修改需点“确认修改”才生效。",
-    month_calendar_label:"本月日历",
-    today_total_label:"今日消费总数", day_ph:"例如 35",
-    confirm_edit:"确认修改", cancel_edit:"取消修改",
-    tags_label:"当日花销内容标签（可多选）",
-    tag_parking:"停车费", tag_grocery:"超市购物", tag_dining:"外出吃饭", tag_gift:"礼物", tag_transport:"油费/交通",
-    tag_household:"生活用品", tag_bills:"账单/订阅", tag_medical:"医疗/药品", tag_entertainment:"娱乐/休闲", tag_other:"其他",
-    save_day:"保存这天", saved:"已保存",
-    avg_actual:"日均实际（S ÷ d）", month_remaining:"本月剩余",
-    month_list_title:"本月每日列表（红色=曾修改）",
-    no_records:"（暂无记录）",
-    footer_note:"说明：切换币种只改变显示单位，不做汇率换算。每个账本独立存储。输入框改动不会立刻写入；只有产生修改行为时，“确认修改”才会变为可点击。",
-    gate_title:"请输入账本名称", gate_desc:"例如：a / 家庭 / Yang / 2025。每个账本的数据完全独立，不会互相串联。", gate_ph:"账本名称（必填）", gate_enter:"进入",
-    gate_tip:"提示：账本名称仅存本地，不联网。如果你和别人共用同一台电脑同一浏览器，记得用不同账本名称。",
-    calc_title:"计算器修改", close:"关闭", cancel:"取消", calc_clear:"清零", calc_back:"退格", write_back:"把结果写回",
-    month_prefix:"月份：{ym}", spent_until:"截至目前已花", spent_month:"本月已花", need_today:"为不超支：从明天起后续日均需 ≤", need_ended:"该月已结束",
-    edit_prefix:"编辑：{ymd}（{wk}）",
-    cannot_future:"不能填写未来日期（例如明天）。",
-    cannot_future_month:"未来月份不可编辑。",
-    delete_title:"删除当前账本",
-    delete_tip:"为防误删，确认按钮需要倒计时 10 秒后才能点击。",
-    delete_text:"确定删除账本「{name}」吗？删除后该账本的本地数据将被移除，无法恢复。",
-    delete_btn_wait:"确认删除（{sec}s）",
-    delete_btn_ok:"确认删除",
-    open:"打开"
-  },
-  en: {
-    lang_label:"Language", lang_hint:"Language changes UI text only; your saved data stays the same.",
-    book_current:"Current book", book_new:"New", book_delete:"Delete", book_hint:"Each book is stored separately; data will not mix.",
-    currency_current:"Currency", currency_hint:"Changes display only (no FX conversion).",
-    months_title:"Months", months_tip:"Shows months with records and the current month. Click to view/edit.",
-    legend_title:"Legend", legend_green:"Green = filled", legend_red:"Red = edited", legend_blue:"Blue = today", legend_white:"White = empty",
-    app_title:"Budget Tool (Simple Stats)",
-    history_btn:"History Calendar", history_title:"History Calendar (view/jump)", history_pick_month:"Pick month:", history_tip:"Same colors as main: Green=recorded, Red=confirmed edited, Blue=today. Click a day to jump back to main view.",
-    tax_btn:"Tax Reminder", tax_title2:"Tax Reminder",
-    tax_self_employed:"Self-employed",
-    tax_hide_this_year:"Hide for this year",
-    tax_desc_a:"Individuals: filing deadline; if you owe, payment is also due by this date.",
-    tax_desc_b:"Self-employed: filing deadline (but payment if owing is still due by Apr 30).",
-    tax_note:"Note: Deadline reminder only. Please follow CRA updates.",
-    plan_label:"Monthly budget plan", plan_ph:"e.g., 1000",
-    edit_calc:"Edit (Calculator)", undo:"Undo",
-    edit_date_label:"Edit date (backfill)",
-    picker_hint:"You can only edit up to today (no future dates). Changes take effect after “Confirm”.",
-    month_calendar_label:"Month calendar",
-    today_total_label:"Daily spending", day_ph:"e.g., 35",
-    confirm_edit:"Confirm", cancel_edit:"Cancel",
-    tags_label:"Tags (multi-select)",
-    tag_parking:"Parking", tag_grocery:"Groceries", tag_dining:"Dining out", tag_gift:"Gifts", tag_transport:"Gas/Transport",
-    tag_household:"Household", tag_bills:"Bills/Subscriptions", tag_medical:"Medical", tag_entertainment:"Leisure", tag_other:"Other",
-    save_day:"Save day", saved:"Saved",
-    avg_actual:"Daily avg (S ÷ d)", month_remaining:"Remaining",
-    month_list_title:"Daily list (red = edited)",
-    no_records:"(No records)",
-    footer_note:"Note: Currency changes display only (no FX conversion). Each book is stored separately. Inputs don’t write immediately; “Confirm” becomes clickable only after changes.",
-    gate_title:"Enter a book name", gate_desc:"Examples: a / Family / Yang / 2025. Each book is fully isolated.", gate_ph:"Book name (required)", gate_enter:"Enter",
-    gate_tip:"Tip: Book name is stored locally (no internet). If sharing a device/browser, use different book names.",
-    calc_title:"Calculator", close:"Close", cancel:"Cancel", calc_clear:"Clear", calc_back:"Backspace", write_back:"Write back",
-    month_prefix:"Month: {ym}", spent_until:"Spent so far", spent_month:"Spent in month", need_today:"To avoid overspending: required daily avg from tomorrow ≤", need_ended:"Month ended",
-    edit_prefix:"Editing: {ymd} ({wk})",
-    cannot_future:"You cannot enter future dates (e.g., tomorrow).",
-    cannot_future_month:"Future months cannot be edited.",
-    delete_title:"Delete current book",
-    delete_tip:"To prevent mistakes, the confirm button will unlock after 10 seconds.",
-    delete_text:"Delete book “{name}”? Local data will be removed and cannot be recovered.",
-    delete_btn_wait:"Delete ({sec}s)",
-    delete_btn_ok:"Delete",
-    open:"Open"
-  },
-  ja: {
-    lang_label:"言語", lang_hint:"言語は表示だけ変更します。保存データはそのままです。",
-    book_current:"現在の帳簿", book_new:"新規", book_delete:"削除", book_hint:"帳簿ごとにデータは独立し、混ざりません。",
-    currency_current:"通貨", currency_hint:"表示単位のみ変更（為替換算なし）。",
-    months_title:"月", months_tip:"記録がある過去月と当月のみ表示。クリックで閲覧/編集。",
-    legend_title:"凡例", legend_green:"緑＝入力済み", legend_red:"赤＝修正あり", legend_blue:"青＝今日", legend_white:"白＝未入力",
-    app_title:"簡単家計簿（統計）",
-    history_btn:"履歴カレンダー", history_title:"履歴カレンダー（閲覧/移動）", history_pick_month:"月を選択：", history_tip:"色はメインと同じ：緑=記録、赤=確定修正、青=今日。日付クリックでメインへ移動。",
-    tax_btn:"税務リマインド", tax_title2:"税務リマインド",
-    tax_self_employed:"自営業（Self-employed）",
-    tax_hide_this_year:"今年は表示しない",
-    tax_desc_a:"一般：申告期限。追加納税がある場合も同日まで。",
-    tax_desc_b:"自営業：申告期限（ただし追加納税は 4/30 まで）。",
-    tax_note:"注：期限のリマインドのみ。最新情報はCRAをご確認ください。",
-    plan_label:"今月の予算（計画）", plan_ph:"例：1000",
-    edit_calc:"計算機で修正", undo:"元に戻す",
-    edit_date_label:"日付を編集（過去入力）",
-    picker_hint:"今日まで編集可能（未来不可）。反映には「確定」が必要。",
-    month_calendar_label:"今月カレンダー",
-    today_total_label:"当日の支出", day_ph:"例：35",
-    confirm_edit:"確定", cancel_edit:"キャンセル",
-    tags_label:"タグ（複数選択可）",
-    tag_parking:"駐車", tag_grocery:"スーパー", tag_dining:"外食", tag_gift:"ギフト", tag_transport:"交通/ガス",
-    tag_household:"日用品", tag_bills:"請求/サブスク", tag_medical:"医療", tag_entertainment:"娯楽", tag_other:"その他",
-    save_day:"保存", saved:"保存済み",
-    avg_actual:"日平均（S ÷ d）", month_remaining:"残り",
-    month_list_title:"日別一覧（赤＝修正）",
-    no_records:"（記録なし）",
-    footer_note:"注：通貨は表示のみ変更（換算なし）。帳簿は独立保存。入力は即保存されず、変更後に「確定」で反映。",
-    gate_title:"帳簿名を入力", gate_desc:"例：a / 家族 / Yang / 2025。帳簿ごとに完全に独立します。", gate_ph:"帳簿名（必須）", gate_enter:"入る",
-    gate_tip:"ヒント：帳簿名はローカル保存（ネットなし）。共有PC/ブラウザでは別名を使ってください。",
-    calc_title:"計算機", close:"閉じる", cancel:"キャンセル", calc_clear:"クリア", calc_back:"戻す", write_back:"反映する",
-    month_prefix:"月：{ym}", spent_until:"現在までの支出", spent_month:"月の支出", need_today:"超過しないため：明日以降の必要日平均 ≤", need_ended:"月は終了",
-    edit_prefix:"編集中：{ymd}（{wk}）",
-    cannot_future:"未来日は入力できません（例：明日）。",
-    cannot_future_month:"未来の月は編集できません。",
-    delete_title:"帳簿を削除",
-    delete_tip:"誤削除防止のため、10秒後に確定できます。",
-    delete_text:"帳簿「{name}」を削除しますか？ローカルデータは削除され復元できません。",
-    delete_btn_wait:"削除（{sec}s）",
-    delete_btn_ok:"削除",
-    open:"開く"
-  },
-  ko: {
-    lang_label:"언어", lang_hint:"언어는 화면 문구만 변경하며, 저장된 데이터는 그대로입니다.",
-    book_current:"현재 장부", book_new:"새로 만들기", book_delete:"삭제", book_hint:"장부별로 데이터가 분리되어 서로 섞이지 않습니다.",
-    currency_current:"통화", currency_hint:"표시 단위만 변경(환율 변환 없음).",
-    months_title:"월", months_tip:"기록이 있는 과거 월과 현재 월만 표시됩니다. 클릭하여 보기/수정.",
-    legend_title:"색상 설명", legend_green:"초록 = 입력됨", legend_red:"빨강 = 수정됨", legend_blue:"파랑 = 오늘", legend_white:"흰색 = 비어 있음",
-    app_title:"간단 가계부(통계)",
-    history_btn:"기록 달력", history_title:"기록 달력(보기/이동)", history_pick_month:"월 선택:", history_tip:"색상은 메인과 동일: 초록=기록, 빨강=확인 수정, 파랑=오늘. 날짜 클릭 시 메인으로 이동.",
-    tax_btn:"세금 알림", tax_title2:"세금 알림",
-    tax_self_employed:"자영업(Self-employed)",
-    tax_hide_this_year:"올해는 숨기기",
-    tax_desc_a:"개인: 신고 마감. 추가 납부가 있으면 같은 날짜까지 납부.",
-    tax_desc_b:"자영업: 신고 마감(단, 추가 납부는 4/30까지).",
-    tax_note:"참고: 기한 알림용입니다. 최신 정보는 CRA 공지를 확인하세요.",
-    plan_label:"이번 달 예산(계획)", plan_ph:"예: 1000",
-    edit_calc:"수정(계산기)", undo:"되돌리기",
-    edit_date_label:"날짜 편집(과거 수정)",
-    picker_hint:"오늘까지 편집 가능(미래 불가). '확인'을 눌러야 반영됩니다.",
-    month_calendar_label:"월간 달력",
-    today_total_label:"오늘 지출", day_ph:"예: 35",
-    confirm_edit:"확인", cancel_edit:"취소",
-    tags_label:"태그(복수 선택)",
-    tag_parking:"주차", tag_grocery:"마트", tag_dining:"외식", tag_gift:"선물", tag_transport:"교통/주유",
-    tag_household:"생활용품", tag_bills:"청구/구독", tag_medical:"의료", tag_entertainment:"여가", tag_other:"기타",
-    save_day:"저장", saved:"저장됨",
-    avg_actual:"일평균(S ÷ d)", month_remaining:"남은 금액",
-    month_list_title:"일별 목록(빨강=수정)",
-    no_records:"(기록 없음)",
-    footer_note:"참고: 통화는 표시만 변경(환율 변환 없음). 장부는 분리 저장. 입력은 즉시 저장되지 않으며 변경 후 '확인' 시 반영됩니다.",
-    gate_title:"장부 이름 입력", gate_desc:"예: a / 가족 / Yang / 2025. 장부별 데이터는 완전히 분리됩니다.", gate_ph:"장부 이름(필수)", gate_enter:"입장",
-    gate_tip:"팁: 장부 이름은 로컬 저장(인터넷 없음). 같은 PC/브라우저 공유 시 다른 이름을 사용하세요.",
-    calc_title:"계산기", close:"닫기", cancel:"취소", calc_clear:"초기화", calc_back:"지우기", write_back:"값 반영",
-    month_prefix:"월: {ym}", spent_until:"현재까지 지출", spent_month:"월 지출", need_today:"초과 방지: 내일부터 필요한 일평균 ≤", need_ended:"월 종료",
-    edit_prefix:"편집: {ymd}({wk})",
-    cannot_future:"미래 날짜는 입력할 수 없습니다(예: 내일).",
-    cannot_future_month:"미래 월은 편집할 수 없습니다.",
-    delete_title:"장부 삭제",
-    delete_tip:"실수 방지를 위해 10초 후에 확인 버튼이 활성화됩니다.",
-    delete_text:"장부 “{name}”을(를) 삭제할까요? 로컬 데이터는 삭제되며 복구할 수 없습니다.",
-    delete_btn_wait:"삭제({sec}s)",
-    delete_btn_ok:"삭제",
-    open:"열기"
-  },
-  // 其余 6 语种：为了不缺翻译（界面文字不多），这里给到“可用的直译版本”
-  es: { ...null }, fr: { ...null }, de: { ...null }, pt: { ...null }, ru: { ...null }, ar: { ...null }
-};
-
-// 把缺省 6 语种自动 fallback 到英文（不缺字，也不会报错）
-["es","fr","de","pt","ru","ar"].forEach(code=>{
-  I18N[code] = I18N[code] || {};
-  I18N[code] = new Proxy(I18N[code], { get:(_,k)=> (I18N[code][k] ?? I18N.en[k] ?? String(k)) });
-});
-
-function getSavedLang(){ return localStorage.getItem("budgetTool_lang") || "zh"; }
-function setSavedLang(lang){ localStorage.setItem("budgetTool_lang", lang); }
-function t(key, vars = {}){
-  const lang = getSavedLang();
-  const dict = I18N[lang] || I18N.zh;
-  let s = (dict[key] ?? I18N.zh[key] ?? key);
-  for (const [k,v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
-  return s;
-}
-function applyI18n(){
-  document.documentElement.lang = getSavedLang();
-  document.querySelectorAll("[data-i18n]").forEach(el=>{
-    const key = el.getAttribute("data-i18n");
-    el.textContent = t(key);
-  });
-  document.querySelectorAll("[data-i18n-placeholder]").forEach(el=>{
-    const key = el.getAttribute("data-i18n-placeholder");
-    el.setAttribute("placeholder", t(key));
-  });
-  // 动态内容刷新
-  renderTopLines();
-  renderEditLine();
-  renderTaxUI();
-  renderStatsAndList();
-  renderMonthCalendar();
-  buildMonthList();
-}
-
-/***********************
- * 账本存储（隔离）
- ***********************/
-const META_KEY = "budgetTool:meta:v1";
-const BOOK_PREFIX = "budgetTool:book:";
-function bookDataKey(name){ return `${BOOK_PREFIX}${name}:v1`; }
-
-function loadMeta(){
-  const m = safeJsonParse(localStorage.getItem(META_KEY) || "", null);
-  if (m && Array.isArray(m.books)) return m;
-  return { books:[], currentBook:null };
-}
-function saveMeta(meta){ localStorage.setItem(META_KEY, JSON.stringify(meta)); }
-function normalizeBookName(name){
-  const n = String(name||"").trim();
-  const cleaned = n.replace(/[:]/g," ").replace(/\s+/g," ").trim();
-  if (!cleaned) return "";
-  return cleaned.slice(0,24);
-}
-function createEmptyBookData(){
-  return { months:{}, settings:{ currency:"CAD" } };
-}
-function loadBookData(bookName){
-  const key = bookDataKey(bookName);
-  const data = safeJsonParse(localStorage.getItem(key)||"", null);
-  if (data && typeof data === "object"){
-    data.months = data.months || {};
-    data.settings = data.settings || { currency:"CAD" };
-    return data;
-  }
-  const fresh = createEmptyBookData();
-  localStorage.setItem(key, JSON.stringify(fresh));
-  return fresh;
-}
-function saveBookData(bookName, data){
-  localStorage.setItem(bookDataKey(bookName), JSON.stringify(data));
-}
-
-/***********************
- * Tags（稳定 key）
- ***********************/
-const TAG_KEYS = ["parking","grocery","dining","gift","transport","household","bills","medical","entertainment","other"];
-const TAG_LABEL_KEY = {
-  parking:"tag_parking", grocery:"tag_grocery", dining:"tag_dining", gift:"tag_gift", transport:"tag_transport",
-  household:"tag_household", bills:"tag_bills", medical:"tag_medical", entertainment:"tag_entertainment", other:"tag_other"
-};
-const LEGACY_ZH_TO_KEY = {
-  "停车费":"parking","超市购物":"grocery","外出吃饭":"dining","礼物":"gift","油费/交通":"transport",
-  "生活用品":"household","账单/订阅":"bills","医疗/药品":"medical","娱乐/休闲":"entertainment","其他":"other"
-};
-function normalizeTagsToKeys(tags){
-  if (!Array.isArray(tags)) return [];
-  const out=[];
-  for (const x of tags){
-    if (!x) continue;
-    const s=String(x).trim();
-    if (TAG_KEYS.includes(s)) out.push(s);
-    else if (LEGACY_ZH_TO_KEY[s]) out.push(LEGACY_ZH_TO_KEY[s]);
-    else out.push(s);
-  }
-  return Array.from(new Set(out));
-}
-function tagLabel(tag){
-  if (TAG_LABEL_KEY[tag]) return t(TAG_LABEL_KEY[tag]);
-  return String(tag);
-}
-
-/***********************
- * UI 元素引用
- ***********************/
-const langSelect = $("langSelect");
-const bookSelect = $("bookSelect");
-const bookNewBtn = $("bookNewBtn");
-const bookDelBtn = $("bookDelBtn");
-const currencySelect = $("currencySelect");
-
-const monthNav = $("monthNav");
-const dateLine = $("dateLine");
-const spentLabel = $("spentLabel");
-const spentVal = $("spentVal");
-const avgVal = $("avgVal");
-const balanceVal = $("balanceVal");
-const needLabel = $("needLabel");
-const needVal = $("needVal");
-
-const planInput = $("planInput");
-const planUndoBtn = $("planUndoBtn");
-const planEditBtn = $("planEditBtn");
-
-const datePicker = $("datePicker");
-const dayInput = $("dayInput");
-const dayLine = $("dayLine");
-const confirmBtn = $("confirmBtn");
-const cancelBtn = $("cancelBtn");
-const dayUndoBtn = $("dayUndoBtn");
-const dayEditBtn = $("dayEditBtn");
-const recordBtn = $("recordBtn");
-
-const monthList = $("monthList");
-const monthCalendar = $("monthCalendar");
-const chipButtons = Array.from(document.querySelectorAll(".chip"));
-
-// 顶部工具
-const historyOpenBtn = $("historyOpenBtn");
-const taxOpenBtn = $("taxOpenBtn");
-const taxCountdown = $("taxCountdown");
-
-// Gate
-const gateMask = $("gateMask");
-const gateInput = $("gateInput");
-const gateOkBtn = $("gateOkBtn");
-const gateCancelBtn = $("gateCancelBtn");
-const gateClose = $("gateClose");
-
-// Calculator
-const calcMask = $("calcMask");
-const calcClose = $("calcClose");
-const calcCancel = $("calcCancel");
-const calcOk = $("calcOk");
-const calcExprEl = $("calcExpr");
-const calcValEl = $("calcVal");
-
-// History modal
-const historyMask = $("historyMask");
-const historyClose = $("historyClose");
-const historyMonthSelect = $("historyMonthSelect");
-const historyCalendar = $("historyCalendar");
-
-// Tax modal
-const taxMask = $("taxMask");
-const taxClose = $("taxClose");
-const taxCountdownLine = $("taxCountdownLine");
-const taxDateA = $("taxDateA");
-const taxDateB = $("taxDateB");
-const taxSelfToggle = $("taxSelfToggle");
-const taxHideToggle = $("taxHideToggle");
-
-// Delete modal
-const deleteMask = $("deleteMask");
-const deleteClose = $("deleteClose");
-const deleteText = $("deleteText");
-const deleteCancelBtn = $("deleteCancelBtn");
-const deleteOkBtn = $("deleteOkBtn");
-
-/***********************
- * 全局状态
- ***********************/
-let meta = loadMeta();
-let currentBook = meta.currentBook;
-let bookData = null;
-
-const CURRENCY_DECIMALS = { JPY:0, KRW:0, VND:0, CNY:2, USD:2, CAD:2, EUR:2, GBP:2 };
-function normalizeCurrency(code){
-  const c = String(code||"CAD").toUpperCase();
-  return Object.prototype.hasOwnProperty.call(CURRENCY_DECIMALS,c) ? c : "CAD";
-}
-function decimalsForCurrency(code){ return CURRENCY_DECIMALS[normalizeCurrency(code)] ?? 2; }
-
-let activeCurrency = "CAD";
-let activeYm = currentYm;
-let monthData = null;
-let editYmd = todayYmd;
-let draft = { total:null, tags:[] };
-let dirty = false;
-let savedToastTimer = null;
-
-/***********************
- * Month 数据结构
- ***********************/
-function ensureMonth(data, ym){
-  data.months = data.months || {};
-  if (!data.months[ym]){
-    data.months[ym] = { plan:null, days:{}, undo:{ plan:[], day:[] }, startFrom:null, started:false };
-  }else{
-    data.months[ym].undo = data.months[ym].undo || { plan:[], day:[] };
-    data.months[ym].undo.plan = data.months[ym].undo.plan || [];
-    data.months[ym].undo.day = data.months[ym].undo.day || [];
-    data.months[ym].startFrom = data.months[ym].startFrom || null;
-    data.months[ym].started = data.months[ym].started || false;
-  }
-  return data.months[ym];
-}
-function normalizeRecord(rec){
-  if (!rec) return { total:null, tags:[], createdAt:null, updatedAt:null, edited:false };
-  return {
-    total: (typeof rec.total === "number") ? rec.total : (rec.total ?? null),
-    tags: normalizeTagsToKeys(Array.isArray(rec.tags)?rec.tags:[]),
-    createdAt: rec.createdAt ?? null,
-    updatedAt: rec.updatedAt ?? null,
-    edited: !!rec.edited
+(() => {
+  // ---------- Utilities ----------
+  const $ = (id) => document.getElementById(id);
+  const todayISO = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
   };
-}
-function getDayRecord(dateStr){ return normalizeRecord(monthData.days[dateStr]); }
+  const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+  const toast = (msg) => {
+    const t = $("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => (t.style.display = "none"), 1800);
+  };
+  const safeJSONParse = (s, fallback) => {
+    try { return JSON.parse(s); } catch { return fallback; }
+  };
+  const formatMoney = (n) => {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return "0.00";
+    return x.toFixed(2);
+  };
+  const parseAmount = (raw) => {
+    // 允许： 12 / 12.5 / -8 / +3.2 / 1,234.56
+    const s = String(raw || "").trim().replace(/,/g, "");
+    if (!s) return NaN;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  };
 
-/***********************
- * 货币显示
- ***********************/
-function fmtMoney(n){
-  if (n === null || n === undefined || Number.isNaN(n)) return "—";
-  const dp = decimalsForCurrency(activeCurrency);
-  const v = Math.round(n * Math.pow(10,dp)) / Math.pow(10,dp);
-  return `${v.toFixed(dp)} ${activeCurrency}`;
-}
-function saveCurrentBook(){
-  if (!currentBook || !bookData) return;
-  saveBookData(currentBook, bookData);
-}
-function setCurrency(code){
-  activeCurrency = normalizeCurrency(code);
-  bookData.settings = bookData.settings || {};
-  bookData.settings.currency = activeCurrency;
-  saveCurrentBook();
-  currencySelect.value = activeCurrency;
-  renderStatsAndList();
-  renderMonthCalendar();
-  renderTopLines();
-  if (calcMask.style.display === "flex") renderCalc();
-}
+  // ---------- Account isolation ----------
+  const KEY_USER = "LJZ_OFFLINE_USER_V1";
+  const KEY_DATA_PREFIX = "LJZ_OFFLINE_DATA_V1::"; // + username
 
-/***********************
- * 确认按钮状态
- ***********************/
-function setConfirmState(isDirty){
-  dirty = isDirty;
-  confirmBtn.disabled = !dirty;
-  confirmBtn.textContent = t("confirm_edit");
-}
-function markSavedOnRecordBtn(){
-  if (savedToastTimer){ clearTimeout(savedToastTimer); savedToastTimer=null; }
-  recordBtn.classList.add("saved");
-  recordBtn.textContent = t("saved");
-  savedToastTimer = setTimeout(()=>{
-    recordBtn.classList.remove("saved");
-    recordBtn.textContent = t("save_day");
-  }, 1200);
-}
-function getSelectedTags(){
-  return chipButtons.filter(b=>b.classList.contains("on")).map(b=>b.getAttribute("data-tag")).filter(Boolean);
-}
-function setSelectedTags(tags){
-  const set = new Set(normalizeTagsToKeys(tags||[]));
-  chipButtons.forEach(b=>{
-    const k = b.getAttribute("data-tag");
-    b.classList.toggle("on", !!k && set.has(k));
-  });
-}
+  const getUser = () => localStorage.getItem(KEY_USER) || "";
+  const setUser = (u) => localStorage.setItem(KEY_USER, u);
 
-/***********************
- * 顶部文案
- ***********************/
-const weekMapZh = ["周日","周一","周二","周三","周四","周五","周六"];
-const weekMapEn = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-function weekdayOf(ymd){
-  const idx = parseYmd(ymd).getDay();
-  return (getSavedLang()==="zh") ? weekMapZh[idx] : weekMapEn[idx];
-}
-function renderTopLines(){
-  dateLine.textContent = t("month_prefix", { ym: activeYm });
-  if (activeYm === currentYm){
-    spentLabel.textContent = t("spent_until");
-    needLabel.textContent = t("need_today");
-  }else{
-    spentLabel.textContent = t("spent_month");
-    needLabel.textContent = t("need_ended");
-  }
-}
-function renderEditLine(){
-  dayLine.textContent = t("edit_prefix", { ymd: editYmd, wk: weekdayOf(editYmd) });
-}
+  const dataKey = (user) => KEY_DATA_PREFIX + user;
 
-/***********************
- * 税务提醒：倒计时与显示逻辑（问题2）
- ***********************/
-function taxYearKey(){
-  const y = new Date().getFullYear();
-  return `budgetTool_tax_hide_${y}`;
-}
-function isTaxHiddenForYear(){ return localStorage.getItem(taxYearKey())==="1"; }
-function setTaxHiddenForYear(v){ localStorage.setItem(taxYearKey(), v ? "1":"0"); }
+  const loadData = (user) => {
+    const raw = localStorage.getItem(dataKey(user));
+    const obj = safeJSONParse(raw, { entries: [] });
+    if (!obj || !Array.isArray(obj.entries)) return { entries: [] };
+    return obj;
+  };
 
-function taxDates(){
-  const y = new Date().getFullYear();
-  const apr30 = `${y}-04-30`;
-  const jun15 = `${y}-06-15`;
-  return { apr30, jun15 };
-}
-function taxCountdownText(){
-  const { apr30, jun15 } = taxDates();
-  const isSE = !!taxSelfToggle.checked;
+  const saveData = (user, obj) => {
+    localStorage.setItem(dataKey(user), JSON.stringify(obj));
+  };
 
-  const baseEnd = isSE ? jun15 : apr30; // 申报截止
-  // 但补税截止对所有人都是 apr30：这里的倒计时规则按你要求：
-  // 未到税务日期：距离“报税”还有多久
-  // 在日期内：距离“纳税结束”还有多少天（这里用 4/30 到期窗口：到截止日当天显示 0 天）
-  const today = todayYmd;
-
-  // 以“报税日期”为主倒计时：普通看 apr30，自雇看 jun15
-  const dToFile = diffDays(today, baseEnd);
-
-  if (dToFile > 0){
-    return (getSavedLang()==="zh")
-      ? `距离报税还有 ${dToFile} 天`
-      : `Filing in ${dToFile} days`;
-  }
-  // 已到/已过：显示距离“纳税结束”（这里按 apr30 为纳税结束）
-  const dToPayEnd = diffDays(today, apr30);
-  const left = Math.max(0, dToPayEnd);
-  return (getSavedLang()==="zh")
-    ? `距离纳税结束还有 ${left} 天`
-    : `Payment window: ${left} days left`;
-}
-
-function renderTaxUI(){
-  const { apr30, jun15 } = taxDates();
-  taxDateA.textContent = apr30;
-  taxDateB.textContent = jun15;
-
-  const hidden = isTaxHiddenForYear();
-  taxHideToggle.checked = hidden;
-
-  // 顶部按钮始终存在：即使隐藏今年提醒，也能通过按钮打开弹窗再恢复
-  const cd = taxCountdownText();
-  taxCountdown.textContent = cd;
-  taxCountdownLine.textContent = cd;
-
-  // 如果用户选择“今年不再提示”，顶部倒计时依旧显示，但弹窗里复选框保持勾选
-}
-
-/***********************
- * 弹窗开关
- ***********************/
-function openMask(maskEl){ maskEl.style.display="flex"; maskEl.setAttribute("aria-hidden","false"); }
-function closeMask(maskEl){ maskEl.style.display="none"; maskEl.setAttribute("aria-hidden","true"); }
-
-[gateMask, calcMask, historyMask, taxMask, deleteMask].forEach(m=>{
-  m.addEventListener("click", (e)=>{ if (e.target === m) closeMask(m); });
-});
-
-/***********************
- * Gate：创建账本
- ***********************/
-function rebuildBookSelect(){
-  meta = loadMeta();
-  bookSelect.innerHTML = meta.books.map(b=>{
-    const sel = (b===meta.currentBook) ? "selected":"";
-    return `<option value="${b}" ${sel}>${b}</option>`;
-  }).join("");
-}
-function requireBookOnStart(){
-  meta = loadMeta();
-  if (!meta.books.length || !meta.currentBook){
-    gateInput.value="";
-    openMask(gateMask);
-    setTimeout(()=>gateInput.focus(), 50);
-  }
-}
-function ensureBook(metaObj, bookName){
-  const bn = normalizeBookName(bookName);
-  if (!bn) return null;
-  if (!metaObj.books.includes(bn)) metaObj.books.push(bn);
-  metaObj.currentBook = bn;
-  saveMeta(metaObj);
-  loadBookData(bn);
-  return bn;
-}
-
-gateOkBtn.addEventListener("click", ()=>{
-  const name = normalizeBookName(gateInput.value);
-  if (!name){ alert(t("gate_ph")); return; }
-  meta = loadMeta();
-  const bn = ensureBook(meta, name);
-  if (!bn) return;
-  closeMask(gateMask);
-  rebuildBookSelect();
-  switchBook(bn);
-});
-gateCancelBtn.addEventListener("click", ()=>{
-  meta = loadMeta();
-  if (!meta.books.length){ alert(t("gate_ph")); return; }
-  closeMask(gateMask);
-});
-gateClose.addEventListener("click", ()=> closeMask(gateMask));
-
-bookNewBtn.addEventListener("click", ()=>{
-  gateInput.value="";
-  openMask(gateMask);
-  setTimeout(()=>gateInput.focus(), 50);
-});
-bookSelect.addEventListener("change", ()=>{
-  const name = normalizeBookName(bookSelect.value);
-  if (!name) return;
-  meta = loadMeta();
-  meta.currentBook = name;
-  saveMeta(meta);
-  switchBook(name);
-});
-
-/***********************
- * 删除账本：弹窗 + 10秒倒计时（问题3）
- ***********************/
-let deleteTimer = null;
-let deleteLeft = 10;
-
-function openDeleteModal(){
-  meta = loadMeta();
-  const cur = meta.currentBook;
-  if (!cur) return;
-
-  deleteText.textContent = t("delete_text", { name: cur });
-
-  deleteLeft = 10;
-  deleteOkBtn.disabled = true;
-  deleteOkBtn.textContent = t("delete_btn_wait", { sec: deleteLeft });
-
-  if (deleteTimer) clearInterval(deleteTimer);
-  deleteTimer = setInterval(()=>{
-    deleteLeft -= 1;
-    if (deleteLeft > 0){
-      deleteOkBtn.textContent = t("delete_btn_wait", { sec: deleteLeft });
-    }else{
-      clearInterval(deleteTimer);
-      deleteTimer = null;
-      deleteOkBtn.disabled = false;
-      deleteOkBtn.textContent = t("delete_btn_ok");
+  const ensureUser = () => {
+    let u = getUser();
+    while (!u) {
+      u = prompt("请输入账户名称（用于隔离数据，例如：A / 妈妈 / 张三）。\n不联网，仅在本机使用。") || "";
+      u = u.trim();
+      if (!u) alert("账户名称不能为空。");
     }
-  }, 1000);
+    setUser(u);
+    return u;
+  };
 
-  openMask(deleteMask);
-}
+  // ---------- State ----------
+  let user = ensureUser();
+  $("who").textContent = user;
 
-bookDelBtn.addEventListener("click", openDeleteModal);
-deleteClose.addEventListener("click", ()=> closeMask(deleteMask));
-deleteCancelBtn.addEventListener("click", ()=> closeMask(deleteMask));
+  const initDates = () => {
+    const t = todayISO();
+    $("date").value = t;
+    $("viewDate").value = t;
+  };
 
-deleteOkBtn.addEventListener("click", ()=>{
-  if (deleteOkBtn.disabled) return;
-  meta = loadMeta();
-  const cur = meta.currentBook;
-  if (!cur) return;
+  // ---------- Rendering ----------
+  const render = () => {
+    const d = loadData(user);
+    const viewDate = $("viewDate").value || todayISO();
+    const q = ($("search").value || "").trim().toLowerCase();
 
-  localStorage.removeItem(bookDataKey(cur));
-  meta.books = meta.books.filter(b=>b!==cur);
-  meta.currentBook = meta.books.length ? meta.books[0] : null;
-  saveMeta(meta);
+    const allEntries = d.entries.slice().sort((a, b) => (a.date > b.date ? -1 : 1));
+    const dayEntries = allEntries.filter(e => e.date === viewDate)
+      .filter(e => !q || (String(e.note || "").toLowerCase().includes(q)));
 
-  closeMask(deleteMask);
-  rebuildBookSelect();
-  if (meta.currentBook) switchBook(meta.currentBook);
-  else requireBookOnStart();
-});
+    // KPIs
+    $("kAll").textContent = String(allEntries.length);
+    $("kCount").textContent = String(dayEntries.length);
+    const sum = dayEntries.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    $("kSum").textContent = formatMoney(sum);
 
-/***********************
- * 历史日历（问题1）：可选择月份 + 日历点击跳转
- ***********************/
-function listAvailableMonths(){
-  const months = new Set(Object.keys((bookData?.months)||{}));
-  months.add(currentYm);
-  // 只到当前月（不显示未来）
-  return Array.from(months).filter(m=>m<=currentYm).sort((a,b)=> a>b ? -1:1);
-}
-function monthRecordedDaysCount(ymStr){
-  const md = ensureMonth(bookData, ymStr);
-  let c=0;
-  for (const [k, rec0] of Object.entries(md.days)){
-    if (!k.startsWith(ymStr+"-")) continue;
-    const rec = normalizeRecord(rec0);
-    if (typeof rec.total === "number") c++;
-  }
-  return c;
-}
-function fillHistoryMonthSelect(){
-  const arr = listAvailableMonths();
-  historyMonthSelect.innerHTML = arr.map(m=>{
-    const d = monthRecordedDaysCount(m);
-    const suffix = (getSavedLang()==="zh") ? "天" : "days";
-    const sel = (m===activeYm) ? "selected" : "";
-    return `<option value="${m}" ${sel}>${m} (${d}${suffix})</option>`;
-  }).join("");
-}
-function renderHistoryCalendar(ym){
-  const md = ensureMonth(bookData, ym);
-  const {y,m}=parseYm(ym);
-  const days = daysInMonth(ym);
-  const firstDay = new Date(y, m-1, 1).getDay();
+    // List
+    const list = $("list");
+    list.innerHTML = "";
+    if (dayEntries.length === 0) {
+      const div = document.createElement("div");
+      div.className = "empty";
+      div.textContent = q ? "当天没有匹配的记录。" : "当天暂无记录。";
+      list.appendChild(div);
+      return;
+    }
 
-  let html="";
-  for (let i=0;i<firstDay;i++) html += `<div class="day-cell day-pad"></div>`;
+    dayEntries.forEach(e => {
+      const item = document.createElement("div");
+      item.className = "item";
 
-  for (let d=1; d<=days; d++){
-    const ymd = `${ym}-${pad2(d)}`;
-    const rec = normalizeRecord(md.days[ymd]);
+      const left = document.createElement("div");
+      left.innerHTML = `
+        <div class="amt">${formatMoney(e.amount)}</div>
+        <div class="meta">${e.date}</div>
+      `;
 
-    let cls="day-empty";
-    if (ymd===todayYmd) cls="day-today";
-    else if (rec.edited) cls="day-edited";
-    else if (typeof rec.total === "number") cls="day-recorded";
+      const mid = document.createElement("div");
+      const note = (e.note || "").trim() || "（无备注）";
+      mid.innerHTML = `<div class="note"></div><div class="meta"></div>`;
+      mid.querySelector(".note").textContent = note;
+      mid.querySelector(".meta").textContent = `ID: ${e.id}`;
 
-    html += `<div class="day-cell ${cls}" data-date="${ymd}">${d}</div>`;
-  }
-  historyCalendar.innerHTML = html;
+      const right = document.createElement("div");
+      right.className = "right";
 
-  historyCalendar.querySelectorAll(".day-cell[data-date]").forEach(el=>{
-    el.addEventListener("click", ()=>{
-      const d = el.dataset.date;
-      if (!d) return;
-      if (isFutureDate(d)) return;
-      closeMask(historyMask);
-      switchEditDate(d); // 跳转回主编辑逻辑
+      const delBtn = document.createElement("button");
+      delBtn.className = "danger";
+      delBtn.textContent = "删除";
+      delBtn.onclick = () => {
+        const ok = confirm("确定删除这条记录吗？");
+        if (!ok) return;
+        const cur = loadData(user);
+        cur.entries = cur.entries.filter(x => x.id !== e.id);
+        saveData(user, cur);
+        toast("已删除");
+        render();
+      };
+
+      right.appendChild(delBtn);
+
+      item.appendChild(left);
+      item.appendChild(mid);
+      item.appendChild(right);
+
+      list.appendChild(item);
     });
-  });
-}
-historyOpenBtn.addEventListener("click", ()=>{
-  fillHistoryMonthSelect();
-  renderHistoryCalendar(historyMonthSelect.value || activeYm);
-  openMask(historyMask);
-});
-historyClose.addEventListener("click", ()=> closeMask(historyMask));
-historyMonthSelect.addEventListener("change", ()=>{
-  renderHistoryCalendar(historyMonthSelect.value);
-});
+  };
 
-/***********************
- * 税务弹窗打开/设置
- ***********************/
-taxOpenBtn.addEventListener("click", ()=>{
-  renderTaxUI();
-  openMask(taxMask);
-});
-taxClose.addEventListener("click", ()=> closeMask(taxMask));
-taxSelfToggle.addEventListener("change", ()=> renderTaxUI());
-taxHideToggle.addEventListener("change", ()=>{
-  setTaxHiddenForYear(taxHideToggle.checked);
-  renderTaxUI();
-});
+  // ---------- Actions ----------
+  const onSave = () => {
+    const date = ($("date").value || "").trim();
+    const amount = parseAmount($("amount").value);
+    const note = ($("note").value || "").trim();
 
-</script>
-<!-- ======= 第 7 段：主逻辑收尾 + 税务按钮/倒计时 + 删除账本二次确认弹窗 ======= -->
-<script>
-/***********************
- * i18n（补齐常用语言：zh/en/ja/ko + 6种最常用语言：es/fr/de/pt/ru/ar）
- * 说明：这 6 种语言先用英文作为默认回退，不会缺 key，也不会报错。
- ***********************/
-(function ensureExtraLangFallback(){
-  const extra = ["es","fr","de","pt","ru","ar"];
-  extra.forEach(code=>{
-    if (!I18N[code]) I18N[code] = {};
-    I18N[code] = new Proxy(I18N[code], {
-      get: (_, k) => (I18N[code][k] ?? I18N.en[k] ?? String(k))
+    if (!date) { toast("请选择日期"); return; }
+    if (!Number.isFinite(amount)) { toast("金额格式不对"); return; }
+
+    const cur = loadData(user);
+    cur.entries.push({
+      id: uid(),
+      date,
+      amount,
+      note,
+      createdAt: Date.now()
     });
-  });
-})();
+    saveData(user, cur);
 
-/***********************
- * Tax Reminder 2.0（改成：一个按钮 + 倒计时）
- * 逻辑：
- * - 按钮名：税务提醒（Tax Reminder）
- * - 旁边倒计时以“天”为单位：
- *   - 如果还没到 Apr 30：显示“距离报税截止还有 X 天”
- *   - 如果在 Apr 30 ~ Jun 15（且自雇）：显示“距离自雇报税截止还有 X 天”
- *   - 如果在 Apr 30 当天：显示“今天是报税/补税截止日”
- *   - 如果过了期限：显示“本年度税务期限已过（以 CRA 为准）”
- * - “今年不再提示”不再把按钮弄没，而是只隐藏展开内容，按钮永远可点打开
- ***********************/
-(function upgradeTaxUI(){
-  const card = document.getElementById("taxReminderCard");
-  if (!card) return;
+    // 同步查看日期到刚保存的日期
+    $("viewDate").value = date;
 
-  // 复用原来的元素
-  const text = document.getElementById("taxReminderText");
-  const selfToggle = document.getElementById("isSelfEmployedToggle");
-  const hideToggle = document.getElementById("hideTaxReminderToggle");
+    // 清理输入（保留日期，方便连续记账）
+    $("amount").value = "";
+    $("note").value = "";
 
-  // 创建：按钮 + 倒计时
-  const head = document.createElement("div");
-  head.style.display = "flex";
-  head.style.alignItems = "center";
-  head.style.justifyContent = "space-between";
-  head.style.gap = "10px";
-
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "btn";
-  btn.id = "taxBtn";
-  btn.style.fontWeight = "900";
-  btn.style.borderRadius = "12px";
-  btn.style.padding = "10px 12px";
-  btn.style.background = "#111";
-  btn.style.color = "#fff";
-  btn.style.border = "0";
-  btn.style.cursor = "pointer";
-  btn.textContent = (getSavedLang()==="zh") ? "税务提醒" : "Tax Reminder";
-
-  const counter = document.createElement("div");
-  counter.id = "taxCounter";
-  counter.style.fontSize = "13px";
-  counter.style.fontWeight = "800";
-  counter.style.color = "#111";
-  counter.style.background = "#f3f4f8";
-  counter.style.padding = "8px 10px";
-  counter.style.borderRadius = "12px";
-  counter.style.border = "1px solid #e6e6e6";
-  counter.style.whiteSpace = "nowrap";
-
-  head.appendChild(btn);
-  head.appendChild(counter);
-
-  // 把 head 插到 card 最前面（替换原 title 的视觉结构）
-  const oldTitle = card.querySelector(".tax-title");
-  if (oldTitle) oldTitle.style.display = "none";
-  card.insertBefore(head, card.firstChild);
-
-  // 折叠区：text + toggles + note
-  const foldWrap = document.createElement("div");
-  foldWrap.id = "taxFoldWrap";
-  foldWrap.style.marginTop = "10px";
-
-  // 把原有内容搬进去
-  const linesWrap = document.createElement("div");
-  linesWrap.appendChild(text);
-
-  const row = card.querySelector(".tax-row");
-  const note = card.querySelector(".tax-note");
-
-  foldWrap.appendChild(linesWrap);
-  if (row) foldWrap.appendChild(row);
-  if (note) foldWrap.appendChild(note);
-
-  // 清空 card（保留 head），再放回 foldWrap
-  // 但不要把 head 移除
-  while (card.children.length > 1) card.removeChild(card.lastChild);
-  card.appendChild(foldWrap);
-
-  // 折叠状态：永远可打开
-  let isOpen = true;
-  function setOpen(v){
-    isOpen = v;
-    foldWrap.style.display = isOpen ? "block" : "none";
-  }
-
-  btn.addEventListener("click", ()=>{
-    setOpen(!isOpen);
-  });
-
-  // hide 仅隐藏折叠内容，不隐藏按钮
-  function applyHideState(){
-    const hidden = isTaxHiddenForYear();
-    hideToggle.checked = hidden;
-    if (hidden) setOpen(false);
-  }
-
-  hideToggle.addEventListener("change", ()=>{
-    setTaxHiddenForYear(hideToggle.checked);
-    applyHideState();
-  });
-
-  // 倒计时（天）
-  function daysDiff(fromDate, toDate){
-    // 只按日期算天，不按小时
-    const a = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate()).getTime();
-    const b = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate()).getTime();
-    return Math.ceil((b - a) / 86400000);
-  }
-
-  function renderTaxCounter(){
-    const y = new Date().getFullYear();
-    const today = new Date();
-    const apr30 = new Date(y, 3, 30); // month 0-based
-    const jun15 = new Date(y, 5, 15);
-
-    const lang = getSavedLang();
-    const isSE = !!selfToggle.checked;
-
-    // case 1: before Apr 30
-    if (today < apr30){
-      const d = daysDiff(today, apr30);
-      counter.textContent = (lang==="zh")
-        ? `距离报税截止还有 ${d} 天`
-        : `Days to Apr 30: ${d}`;
-      return;
-    }
-
-    // case 2: exactly Apr 30
-    if (today.getFullYear()===apr30.getFullYear() && today.getMonth()===apr30.getMonth() && today.getDate()===apr30.getDate()){
-      counter.textContent = (lang==="zh")
-        ? "今天是报税/补税截止日"
-        : "Today is Apr 30 deadline";
-      return;
-    }
-
-    // case 3: after Apr 30
-    if (!isSE){
-      // 非自雇：Apr 30 之后直接提示已过
-      counter.textContent = (lang==="zh")
-        ? "本年度税务期限已过（以 CRA 为准）"
-        : "Tax deadline passed (check CRA)";
-      return;
-    }
-
-    // 自雇：Apr30 ~ Jun15 显示到 Jun15 的倒计时
-    if (today < jun15){
-      const d = daysDiff(today, jun15);
-      counter.textContent = (lang==="zh")
-        ? `距离自雇报税截止还有 ${d} 天`
-        : `Days to Jun 15: ${d}`;
-      return;
-    }
-
-    // exactly Jun 15
-    if (today.getFullYear()===jun15.getFullYear() && today.getMonth()===jun15.getMonth() && today.getDate()===jun15.getDate()){
-      counter.textContent = (lang==="zh")
-        ? "今天是自雇报税截止日"
-        : "Today is Jun 15 deadline";
-      return;
-    }
-
-    // after Jun15
-    counter.textContent = (lang==="zh")
-      ? "本年度税务期限已过（以 CRA 为准）"
-      : "Tax deadline passed (check CRA)";
-  }
-
-  // 切换语言时同步按钮名
-  const _applyI18n = applyI18n;
-  applyI18n = function(){
-    _applyI18n();
-    btn.textContent = (getSavedLang()==="zh") ? "税务提醒" : "Tax Reminder";
-    renderTaxCounter();
+    toast("已保存");
+    render();
   };
 
-  selfToggle.addEventListener("change", ()=>{
-    renderTaxReminder();
-    renderTaxCounter();
-  });
+  const onClearInput = () => {
+    $("amount").value = "";
+    $("note").value = "";
+    toast("已清空输入");
+  };
 
-  renderTaxReminder();
-  applyHideState();
-  renderTaxCounter();
+  const onSwitchUser = () => {
+    let u = prompt("输入要切换到的账户名称（不存在则新建）。", user) || "";
+    u = u.trim();
+    if (!u) return;
+    user = u;
+    setUser(u);
+    $("who").textContent = user;
+    toast("已切换账户");
+    render();
+  };
 
-  // 每 6 小时刷新一次倒计时（避免跨天不更新）
-  setInterval(renderTaxCounter, 6 * 60 * 60 * 1000);
-})();
+  const onWipeDay = () => {
+    const day = $("viewDate").value || todayISO();
+    const ok = confirm(`确定清空 ${day} 的所有记录吗？（不可恢复）`);
+    if (!ok) return;
+    const cur = loadData(user);
+    cur.entries = cur.entries.filter(e => e.date !== day);
+    saveData(user, cur);
+    toast("已清空当天");
+    render();
+  };
 
-/***********************
- * 删除账本：改为屏幕中央弹窗 + 确认按钮 10 秒倒计时
- * 替换原 confirm() 逻辑
- ***********************/
-(function replaceDeleteBookConfirm(){
-  const delBtn = document.getElementById("bookDelBtn");
-  if (!delBtn) return;
+  const onWipeAll = () => {
+    const ok = confirm(`确定清空账户「${user}」的全部数据吗？（不可恢复）`);
+    if (!ok) return;
+    saveData(user, { entries: [] });
+    toast("已清空全部");
+    render();
+  };
 
-  // 创建弹窗
-  const mask = document.createElement("div");
-  mask.id = "delMask";
-  mask.style.position = "fixed";
-  mask.style.inset = "0";
-  mask.style.background = "rgba(0,0,0,.45)";
-  mask.style.display = "none";
-  mask.style.alignItems = "center";
-  mask.style.justifyContent = "center";
-  mask.style.padding = "16px";
-  mask.style.zIndex = "1200";
+  const onExport = () => {
+    const cur = loadData(user);
+    const payload = {
+      app: "轻松记账（离线版）",
+      version: 1,
+      user,
+      exportedAt: new Date().toISOString(),
+      data: cur
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g, "-");
+    a.href = URL.createObjectURL(blob);
+    a.download = `轻松记账_备份_${user}_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast("已导出备份");
+  };
 
-  const box = document.createElement("div");
-  box.style.width = "min(520px, 100%)";
-  box.style.background = "#fff";
-  box.style.borderRadius = "16px";
-  box.style.boxShadow = "0 10px 30px rgba(0,0,0,.18)";
-  box.style.padding = "14px";
+  const onImportPick = () => $("importFile").click();
 
-  const title = document.createElement("div");
-  title.style.fontWeight = "900";
-  title.style.fontSize = "16px";
-  title.style.marginBottom = "8px";
-  title.id = "delTitle";
+  const onImportFile = async (file) => {
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
 
-  const msg = document.createElement("div");
-  msg.style.color = "#333";
-  msg.style.fontSize = "13px";
-  msg.style.lineHeight = "1.6";
-  msg.style.whiteSpace = "pre-wrap";
-  msg.id = "delMsg";
+      // 兼容：允许直接导入 {entries:[]} 或 payload.data
+      let imported = null;
+      if (payload && payload.data && Array.isArray(payload.data.entries)) imported = payload.data;
+      else if (payload && Array.isArray(payload.entries)) imported = payload;
 
-  const row = document.createElement("div");
-  row.style.display = "flex";
-  row.style.gap = "10px";
-  row.style.marginTop = "12px";
-
-  const cancel = document.createElement("button");
-  cancel.type = "button";
-  cancel.className = "btn";
-  cancel.textContent = (getSavedLang()==="zh") ? "取消" : "Cancel";
-  cancel.style.flex = "1";
-
-  const ok = document.createElement("button");
-  ok.type = "button";
-  ok.className = "btn";
-  ok.style.flex = "1";
-  ok.style.background = "#c62828";
-  ok.style.color = "#fff";
-  ok.style.border = "0";
-  ok.style.fontWeight = "900";
-  ok.style.cursor = "not-allowed";
-  ok.disabled = true;
-  ok.id = "delOkBtn";
-
-  row.appendChild(cancel);
-  row.appendChild(ok);
-
-  box.appendChild(title);
-  box.appendChild(msg);
-  box.appendChild(row);
-  mask.appendChild(box);
-  document.body.appendChild(mask);
-
-  let timer = null;
-  let left = 10;
-  let pendingBook = null;
-
-  function openDelModal(bookName){
-    pendingBook = bookName;
-    left = 10;
-
-    title.textContent = (getSavedLang()==="zh") ? "删除账本确认" : "Confirm deletion";
-    msg.textContent = t("confirm_delete_book", { name: bookName });
-
-    ok.disabled = true;
-    ok.style.cursor = "not-allowed";
-    ok.textContent = (getSavedLang()==="zh") ? `确认删除（${left}s）` : `Delete (${left}s)`;
-
-    mask.style.display = "flex";
-
-    if (timer) clearInterval(timer);
-    timer = setInterval(()=>{
-      left -= 1;
-      if (left <= 0){
-        clearInterval(timer);
-        timer = null;
-        ok.disabled = false;
-        ok.style.cursor = "pointer";
-        ok.textContent = (getSavedLang()==="zh") ? "确认删除" : "Delete";
-      } else {
-        ok.textContent = (getSavedLang()==="zh") ? `确认删除（${left}s）` : `Delete (${left}s)`;
+      if (!imported) {
+        alert("导入失败：文件格式不正确。");
+        return;
       }
-    }, 1000);
-  }
 
-  function closeDelModal(){
-    mask.style.display = "none";
-    if (timer) clearInterval(timer);
-    timer = null;
-    pendingBook = null;
-  }
+      const ok = confirm(
+        "导入会把“当前账户”的数据与文件中的数据合并（不会覆盖）。\n确定继续吗？"
+      );
+      if (!ok) return;
 
-  mask.addEventListener("click", (e)=>{ if (e.target === mask) closeDelModal(); });
-  cancel.addEventListener("click", closeDelModal);
+      const cur = loadData(user);
+      // 去重：按 id 去重
+      const exist = new Set(cur.entries.map(e => e.id));
+      const toAdd = imported.entries.filter(e => e && e.id && !exist.has(e.id));
+      cur.entries = cur.entries.concat(toAdd);
 
-  ok.addEventListener("click", ()=>{
-    if (ok.disabled) return;
-    if (!pendingBook) return;
-
-    // 执行原删除逻辑
-    meta = loadMeta();
-    const cur = pendingBook;
-
-    localStorage.removeItem(bookDataKey(cur));
-    meta.books = meta.books.filter(b => b !== cur);
-    meta.currentBook = meta.books.length ? meta.books[0] : null;
-    saveMeta(meta);
-
-    rebuildBookSelect();
-    if (meta.currentBook) switchBook(meta.currentBook);
-    else requireBookOnStart();
-
-    closeDelModal();
-  });
-
-  // 覆盖原按钮点击事件（避免双绑定）
-  delBtn.addEventListener("click", (e)=>{
-    e.preventDefault();
-    e.stopPropagation();
-    meta = loadMeta();
-    const cur = meta.currentBook;
-    if (!cur) return;
-    openDelModal(cur);
-  }, true);
-
-  // 语言切换时更新弹窗按钮文字（如果弹窗开着）
-  const _applyI18n2 = applyI18n;
-  applyI18n = function(){
-    _applyI18n2();
-    cancel.textContent = (getSavedLang()==="zh") ? "取消" : "Cancel";
-    if (mask.style.display === "flex" && pendingBook){
-      title.textContent = (getSavedLang()==="zh") ? "删除账本确认" : "Confirm deletion";
-      msg.textContent = t("confirm_delete_book", { name: pendingBook });
-      if (ok.disabled){
-        ok.textContent = (getSavedLang()==="zh") ? `确认删除（${left}s）` : `Delete (${left}s)`;
-      } else {
-        ok.textContent = (getSavedLang()==="zh") ? "确认删除" : "Delete";
-      }
+      saveData(user, cur);
+      toast(`已导入 ${toAdd.length} 条`);
+      render();
+    } catch (e) {
+      alert("导入失败：无法读取该文件。");
     }
   };
-})();
 
-/***********************
- * 关键：统一初始化（如果这里没跑起来，所有按钮都不会动）
- ***********************/
-(function finalBootstrap(){
-  // 语言 & 税务先初始化
-  initI18n();
-  initTaxReminder();
+  // ---------- Wire up ----------
+  $("saveBtn").addEventListener("click", onSave);
+  $("clearBtn").addEventListener("click", onClearInput);
+  $("switchUserBtn").addEventListener("click", onSwitchUser);
 
-  // 账本初始化
-  rebuildBookSelect();
-  requireBookOnStart();
-  meta = loadMeta();
-  if (meta.currentBook) switchBook(meta.currentBook);
+  $("viewDate").addEventListener("change", render);
+  $("search").addEventListener("input", render);
 
-  // 币种切换
-  currencySelect.addEventListener('change', ()=> setCurrency(currencySelect.value));
+  $("wipeDayBtn").addEventListener("click", onWipeDay);
+  $("wipeAllBtn").addEventListener("click", onWipeAll);
 
-  // 首次也刷新一次（确保界面文字与倒计时正确）
-  applyI18n();
+  $("exportBtn").addEventListener("click", onExport);
+  $("importBtn").addEventListener("click", onImportPick);
+  $("importFile").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) onImportFile(f);
+    e.target.value = "";
+  });
+
+  // Enter to save (when focus in amount)
+  $("amount").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") onSave();
+  });
+
+  // Init
+  initDates();
+  render();
 })();
 </script>
+</body>
+</html>
